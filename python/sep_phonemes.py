@@ -13,6 +13,12 @@ dst = 'resource/jvs_ver1_phonmes/jvs%(person)03d/VOICEACTRESS100_%(voice)03d_%(f
 for person in range(100):
 
     print('[Processing] person:', person + 1)
+    
+    os.makedirs(os.path.split(dst)[0] % { 'person': person + 1 }, exist_ok=True)
+        
+    variable = { key: list() for key in ['f0', 'sp', 'ap'] }
+    stretch  = { key: list() for key in ['f0', 'sp', 'ap'] }
+    label    = { key: list() for key in ['label'] }
 
     for voice in range(100):
 
@@ -53,67 +59,21 @@ for person in range(100):
             before_t = np.linspace(0, target_length - 1, end_frame - start_frame)
             after_t  = np.arange(target_length)
 
+            variable['f0'].append(f0[start_frame:end_frame].astype(np.float32))
+            variable['sp'].append(sp[start_frame:end_frame].astype(np.float32))
+            variable['ap'].append(ap[start_frame:end_frame].astype(np.float32))
+
             # 長さをストレッチして固定長化
             stretch_f0 = scipy.interpolate.interp1d(before_t, f0[start_frame:end_frame], kind='linear')(after_t)
-            stretch_sp = librosa.phase_vocoder(sp[start_frame:end_frame].T, strech_rate, hop_length=hop_length).T[:target_length]
-            stretch_ap = librosa.phase_vocoder(ap[start_frame:end_frame].T, strech_rate, hop_length=hop_length).T[:target_length]
+            stretch_sp = librosa.phase_vocoder(sp[start_frame:end_frame].T, strech_rate, hop_length=hop_length).T
+            stretch_ap = librosa.phase_vocoder(ap[start_frame:end_frame].T, strech_rate, hop_length=hop_length).T
 
-            variable_f0.append(f0[start_frame:end_frame].astype(np.float32))
-            variable_sp.append(sp[start_frame:end_frame].astype(np.float32))
-            variable_ap.append(ap[start_frame:end_frame].astype(np.float32))
+            stretch['f0'].append(stretch_f0.astype(np.float32))
+            stretch['sp'].append(stretch_sp.astype(np.float32))
+            stretch['ap'].append(stretch_ap.astype(np.float32))
 
-            stretch_f0.append(stretch_f0.astype(np.float32))
-            stretch_sp.append(stretch_sp.astype(np.float32))
-            stretch_ap.append(stretch_ap.astype(np.float32))
-
-        variable = {
-            'f0': data.variable_f0,
-            'sp': data.variable_sp,
-            'ap': data.variable_ap,
-            'label': data.label,
-        }
-
-        stretch = {
-            'f0': data.stretch_f0,
-            'sp': data.stretch_sp,
-            'ap': data.stretch_ap,
-            'label': data.label,
-        }
+            label['label'].append(phoneme)
             
-        np.savez_compressed(dst % (specific | { 'fix_type': 'variable' }), **variable)
-        np.savez_compressed(dst % (specific | { 'fix_type': 'stretch' }), **stretch)
+        np.savez_compressed(dst % (specific | { 'fix_type': 'variable' }), **(variable | label))
+        np.savez_compressed(dst % (specific | { 'fix_type': 'stretch' }), **(stretch | label))
     
-    for err_type in ['pserr', 'vcerr', 'noerr']:
-
-        batch_size = 32
-        if err_type == 'pserr':
-            data = pserr
-        elif err_type == 'vcerr':
-            data = vcerr
-        else:
-            data = noerr
-
-        os.makedirs(os.path.split(dst)[0] % { 'person': person + 1 }, exist_ok=True)
-
-        for file_idx in range(len(data.label) // batch_size):
-            specific = { 'person': person + 1, 'file_idx': file_idx + 1 }
-            start_frame = file_idx * batch_size
-            end_frame   = (file_idx + 1) * batch_size
-
-            variable = {
-                'f0': data.variable_f0[start_frame:end_frame],
-                'sp': data.variable_sp[start_frame:end_frame],
-                'ap': data.variable_ap[start_frame:end_frame],
-                'label': data.label[start_frame:end_frame],
-            }
-
-            np.savez_compressed(dst % (specific | { 'fix_type': 'variable' }), **variable)
-
-            stretch = {
-                'f0': data.stretch_f0[start_frame:end_frame],
-                'sp': data.stretch_sp[start_frame:end_frame],
-                'ap': data.stretch_ap[start_frame:end_frame],
-                'label': data.label[start_frame:end_frame],
-            }
-
-            np.savez_compressed(dst % (specific | { 'fix_type': 'strech' }), **stretch)
