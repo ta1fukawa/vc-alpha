@@ -37,8 +37,10 @@ for person in range(100):
 
     for voice in range(100):
 
-        if person in [8, 16, 17, 21, 23, 29, 35, 37, 42, 46, 47, 50, 54, 58, 59, 73, 88, 97] \
-            and voice in [5, 18, 24, 40, 42, 44, 46, 55, 56, 59, 60, 61, 63, 65, 71, 73, 75, 81, 84, 85, 87, 93, 94, 98]:
+        person_exclusion_list = [8, 16, 17, 21, 23, 29, 35, 37, 42, 46, 47, 50, 54, 58, 59, 73, 88, 97]
+        voice_exclusion_list  = [5, 18, 24, 40, 42, 44, 46, 55, 56, 59, 60, 61, 63, 65, 71, 73, 75, 81, 84, 85, 87, 93, 94, 98]
+
+        if person in person_exclusion_list and voice in voice_exclusion_list:
             continue
 
         specific1 = { 'person': person + 1, 'voice': voice + 1 }
