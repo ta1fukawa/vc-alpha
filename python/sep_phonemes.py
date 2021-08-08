@@ -8,27 +8,11 @@ import scipy.interpolate
 
 src = 'resource/jvs_ver1_fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.wav'
 lab = 'resource/jvs_ver1_fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.lab'
-dst = 'resource/jvs_ver1_phonmes/%(err_type)s/jvs%(person)03d/%(fix_type)s_%(file_idx)03d.npz'
+dst = 'resource/jvs_ver1_phonmes/jvs%(person)03d/VOICEACTRESS100_%(voice)03d_%(fix_type)s.npz'
 
 for person in range(100):
 
     print('[Processing] person:', person + 1)
-
-    class Data():
-        def __init__(self):
-            self.variable_f0 = list()
-            self.variable_sp = list()
-            self.variable_ap = list()
-
-            self.stretch_f0 = list()
-            self.stretch_sp = list()
-            self.stretch_ap = list()
-
-            self.label = list()
-            
-    noerr = Data()
-    pserr = Data()
-    vcerr = Data()
 
     for voice in range(100):
 
@@ -66,30 +50,38 @@ for person in range(100):
             end_frame   = int(float(end_sec) * separation_rate)
             strech_rate = (end_frame - start_frame) / target_length
 
-            before_t  = np.linspace(0, target_length - 1, end_frame - start_frame)
-            after_t   = np.arange(target_length)
+            before_t = np.linspace(0, target_length - 1, end_frame - start_frame)
+            after_t  = np.arange(target_length)
 
             # 長さをストレッチして固定長化
             stretch_f0 = scipy.interpolate.interp1d(before_t, f0[start_frame:end_frame], kind='linear')(after_t)
             stretch_sp = librosa.phase_vocoder(sp[start_frame:end_frame].T, strech_rate, hop_length=hop_length).T[:target_length]
             stretch_ap = librosa.phase_vocoder(ap[start_frame:end_frame].T, strech_rate, hop_length=hop_length).T[:target_length]
 
-            if person in person_exclusion_list:
-                data = pserr
-            elif voice in voice_exclusion_list:
-                data = vcerr
-            else:
-                data = noerr
+            variable_f0.append(f0[start_frame:end_frame].astype(np.float32))
+            variable_sp.append(sp[start_frame:end_frame].astype(np.float32))
+            variable_ap.append(ap[start_frame:end_frame].astype(np.float32))
 
-            data.variable_f0.append(f0[start_frame:end_frame].astype(np.float32))
-            data.variable_sp.append(sp[start_frame:end_frame].astype(np.float32))
-            data.variable_ap.append(ap[start_frame:end_frame].astype(np.float32))
+            stretch_f0.append(stretch_f0.astype(np.float32))
+            stretch_sp.append(stretch_sp.astype(np.float32))
+            stretch_ap.append(stretch_ap.astype(np.float32))
 
-            data.stretch_f0.append(stretch_f0.astype(np.float32))
-            data.stretch_sp.append(stretch_sp.astype(np.float32))
-            data.stretch_ap.append(stretch_ap.astype(np.float32))
+        variable = {
+            'f0': data.variable_f0,
+            'sp': data.variable_sp,
+            'ap': data.variable_ap,
+            'label': data.label,
+        }
 
-            data.label.append(phoneme)
+        stretch = {
+            'f0': data.stretch_f0,
+            'sp': data.stretch_sp,
+            'ap': data.stretch_ap,
+            'label': data.label,
+        }
+            
+        np.savez_compressed(dst % (specific | { 'fix_type': 'variable' }), **variable)
+        np.savez_compressed(dst % (specific | { 'fix_type': 'stretch' }), **stretch)
     
     for err_type in ['pserr', 'vcerr', 'noerr']:
 
@@ -101,10 +93,10 @@ for person in range(100):
         else:
             data = noerr
 
-        os.makedirs(os.path.split(dst)[0] % { 'err_type': err_type, 'person': person + 1 }, exist_ok=True)
+        os.makedirs(os.path.split(dst)[0] % { 'person': person + 1 }, exist_ok=True)
 
         for file_idx in range(len(data.label) // batch_size):
-            specific = { 'err_type': err_type, 'person': person + 1, 'file_idx': file_idx + 1 }
+            specific = { 'person': person + 1, 'file_idx': file_idx + 1 }
             start_frame = file_idx * batch_size
             end_frame   = (file_idx + 1) * batch_size
 

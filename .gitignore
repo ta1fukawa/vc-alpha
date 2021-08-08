@@ -130,5 +130,9 @@ dmypy.json
 
 
 # custom
+.vscode
 resource/
 python/tmp
+
+.gitignore
+Pipfile
