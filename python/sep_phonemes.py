@@ -15,10 +15,6 @@ for person in range(100):
     print('[Processing] person:', person + 1)
     
     os.makedirs(os.path.split(dst)[0] % { 'person': person + 1 }, exist_ok=True)
-        
-    variable = { key: list() for key in ['f0', 'sp', 'ap'] }
-    stretch  = { key: list() for key in ['f0', 'sp', 'ap'] }
-    label    = { key: list() for key in ['label'] }
 
     for voice in range(100):
 
@@ -42,6 +38,10 @@ for person in range(100):
         f0 = pyworld.stonemask(wave, _f0, t, sr) # 洗練させるらしい f0 (n, )
         sp = pyworld.cheaptrick(wave, f0, t, sr) # スペクトル包絡の抽出 spectrogram (n, f)
         ap = pyworld.d4c(wave, f0, t, sr) # 非周期性指標の抽出 aperiodicity (n, f)
+        
+        variable = { key: list() for key in ['f0', 'sp', 'ap'] }
+        stretch  = { key: list() for key in ['f0', 'sp', 'ap'] }
+        label    = { key: list() for key in ['label'] }
 
         for start_sec, end_sec, phoneme in labels:
 
