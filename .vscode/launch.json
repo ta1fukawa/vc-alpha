@@ -11,10 +11,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
-            "args": [
-                "--gpu", "0",
-                "--code-backup", "dest/%(datetime)s/"
-            ]
+            "args": []
         }
     ]
 }
