@@ -11,13 +11,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
-<<<<<<< HEAD
             "args": []
-=======
-            "args": [
-                "--gpu", "0"
-            ]
->>>>>>> 8fb9f6083556e4ee3e06fe7acb2a03d59cecfa84
         }
     ]
 }
