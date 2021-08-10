@@ -12,28 +12,32 @@
 
 2. juliusをインストールしておく
 
-```Bash
-apt install julius
-```
-
-または
-
-```Bash
-git clone https://github.com/julius-speech/julius.git
-cd julius
-./configure --enable-words-int
-make
-
-```
+インストール方法は[こちら](https://github.com/julius-speech/julius)を参照。
 
 3. init_dataset.pyを実行する
 
-一部のファイルを修正を行う。
+```Bash
+python3 python/init_dataset.py
+```
+
+一部のファイルを修正を行っている。
 修正できないファイルについては、そのリストに含まれる話者18人とコーパス24文の直積（共通項）をすべて取り除く。
 （詳細は[こちら](dataset.md)）
 
 4. sep_phonemes.pyを実行する
 
+```Bash
+python3 python/sep_phonemes.py
+```
+
 5. calc_nphonemes.pyを実行する
 
+```Bash
+python3 python/alc_nphonemes.py
+```
+
 6. main.pyを実行する
+
+```Bash
+python3 python/main.py
+```
