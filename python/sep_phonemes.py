@@ -8,7 +8,7 @@ import scipy.interpolate
 
 src = 'resource/jvs_ver1_fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.wav'
 lab = 'resource/jvs_ver1_fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.lab'
-dst = 'resource/jvs_ver1_phonmes/jvs%(person)03d/VOICEACTRESS100_%(voice)03d_%(fix_type)s.npz'
+dst = 'resource/jvs_ver1_phonemes/jvs%(person)03d/VOICEACTRESS100_%(voice)03d_%(deform_type)s.npz'
 
 for person in range(100):
 
@@ -74,6 +74,8 @@ for person in range(100):
 
             label['label'].append(phoneme)
             
-        np.savez_compressed(dst % (specific | { 'fix_type': 'variable' }), **(variable | label))
-        np.savez_compressed(dst % (specific | { 'fix_type': 'stretch' }), **(stretch | label))
+        np.savez_compressed(dst % (specific | { 'deform_type': 'variable' }), **(variable | label))
+        np.savez_compressed(dst % (specific | { 'deform_type': 'stretch' }), **(stretch | label))
+        os.symlink(os.path.split(dst)[1] % (specific | { 'deform_type': 'stretch' }), dst % (specific | { 'deform_type': 'padding' }))
+
     
