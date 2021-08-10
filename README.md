@@ -41,3 +41,5 @@ python3 python/alc_nphonemes.py
 ```Bash
 python3 python/main.py
 ```
+
+引数で色々なパターンを実験できるので、`-h`をつけてヘルプを確認してね。
