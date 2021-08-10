@@ -71,21 +71,21 @@ def main(cfg):
     known_person_list   = list(filter(lambda x:x not in person_no_list, np.arange(19)))
     unknown_person_list = list(filter(lambda x:x not in person_no_list, np.arange(19, 40)))
     train_voice_list    = list(filter(lambda x:x not in voice_no_list, np.arange(81)))
-    valid_voice_list    = list(filter(lambda x:x not in voice_no_list, np.arange(81, 95)))
+    check_voice_list    = list(filter(lambda x:x not in voice_no_list, np.arange(81, 95)))
 
     model = FullModel(1, cfg.nfft // 2, len(known_person_list)).to('cuda')
     if cfg.load_weights_path:
         load_weights(model, cfg.load_weights_path)
 
     train_loader = DataLoader(known_person_list, train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
-    valid_loader = DataLoader(known_person_list, valid_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
+    valid_loader = DataLoader(known_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
     history = learn(model, (train_loader, valid_loader), cfg.weights_path, leaning_rate=1e-4, patience=cfg.patience)
     logging.info('History:\n' + history)
 
     known_train_loader   = DataLoader(known_person_list, train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, onehot_mode=False)
-    known_eval_loader    = DataLoader(known_person_list, valid_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, onehot_mode=False)
+    known_eval_loader    = DataLoader(known_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, onehot_mode=False)
     unknown_train_loader = DataLoader(unknown_person_list, train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, onehot_mode=False)
-    unknown_eval_loader  = DataLoader(unknown_person_list, valid_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, onehot_mode=False)
+    unknown_eval_loader  = DataLoader(unknown_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, onehot_mode=False)
     known_train_embed_pred, known_train_embed_true     = predict(model.embed, known_train_loader)
     known_eval_embed_pred, known_eval_embed_true       = predict(model.embed, known_eval_loader)
     unknown_train_embed_pred, unknown_train_embed_true = predict(model.embed, unknown_train_loader)
@@ -172,7 +172,7 @@ def valid(model, loader, criterion):
         with torch.no_grad():
             data, true = batch
             pred = model(data)
-            loss = criterion(torch.flatten(pred), torch.flatten(true))
+            loss = criterion(pred, true)
 
             valid_loss += loss.item()
             valid_acc  += pred.argmax(dim=1).eq(true).sum().item()
