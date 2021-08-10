@@ -168,8 +168,8 @@ def train(model, loader, optimizer, criterion):
             train_acc  += pred.argmax(dim=1).eq(true).sum().item()
             bar.set_postfix({'loss': '%.4f' % (train_loss / (idx + 1)), 'acc': '%.2f %%' % (100 * train_acc / ((idx + 1) * len(true)))})
 
-    train_loss /= len(loader)
-    train_acc  /= len(loader)
+    train_loss /= len(loader) * len(true)
+    train_acc  /= len(loader) * len(true)
     return train_loss, train_acc
 
 def valid(model, loader, criterion):
