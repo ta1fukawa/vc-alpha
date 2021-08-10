@@ -1,0 +1,7 @@
+numpy
+torch
+librosa
+pyworld
+soundfile
+easydict
+tqdm
