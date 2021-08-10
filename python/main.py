@@ -1,9 +1,10 @@
 import argparse
+import datetime
 import glob
 import logging
 import os
+import shutil
 import sys
-import datetime
 
 import easydict
 import librosa
@@ -15,11 +16,13 @@ from sklearn import multiclass, svm
 
 from dataloader import DataLoader
 from models import FullModel
-        
+
+
 def get_args():
     ## TODO: ここらへんを修正
     parser = argparse.ArgumentParser(description='研究用：音素に対して時間領域で処理して話者埋め込みを求めるやつ')
     parser.add_argument('--gpu', default='-1', type=str, metavar='N', help='GPU番号')
+    parser.add_argument('--code-backup', type=str, metavar='N', help='コードのバックアップ先ディレクトリのパス')
     parser.add_argument('--log-path', default='dest/%(datetime)s/general.log', type=str, metavar='N', help='ログファイルのパス')
     parser.add_argument('--load-weights-path', type=str, metavar='N', help='読み込み元のウェイトファイルのパス')
     parser.add_argument('--weights-path', default='dest/%(datetime)s/weights.pth', type=str, metavar='N', help='保存先のウェイトファイルのパス')
@@ -47,15 +50,15 @@ def get_args():
     parser.add_argument('-by', '--phoneme-batch-size', default=16, type=int, metavar='N', help='バッチ内の話者数')
     
     args = vars(parser.parse_args(sys.argv[1:]))
-
-    specific = {
-        'datetime': datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    }
-
-    args['log_path']     = args['log_path'] % specific
-    args['weights_path'] = args['weights_path'] % specific
-
     return args
+
+def backup_code(targets, dest_dir):
+    os.makedirs(os.path.split(dest_dir)[0], exist_ok=True)
+
+    for target in targets:
+        code_files = sorted(glob.glob(target))
+        for code_file in code_files:
+            shutil.copyfile(code_file, os.path.join(dest_dir, os.path.split(code_file)[1]))
 
 def init_logger(log_path, mode='w', stdout=True):
     fmt = '%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s: %(message)s'
@@ -230,6 +233,17 @@ if __name__ == '__main__':
     cfg = easydict.EasyDict(args)
 
     os.environ['CUDA_VISIBLE_DEVICES'] = cfg.gpu
+
+    specific = {
+        'datetime': datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    }
+
+    cfg.log_path     = cfg.log_path % specific
+    cfg.weights_path = cfg.weights_path % specific
+
+    if cfg.code_backup is not None:
+        cfg.code_backup = cfg.code_backup % specific
+        backup_code(['python/*.py'], cfg.code_backup)
 
     init_logger(cfg.log_path)
     logging.debug(args)
