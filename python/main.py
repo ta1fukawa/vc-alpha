@@ -3,6 +3,7 @@ import glob
 import logging
 import os
 import sys
+import datetime
 
 import easydict
 import librosa
@@ -14,28 +15,14 @@ from sklearn import multiclass, svm
 
 from dataloader import DataLoader
 from models import FullModel
-
-
-def init_logger(log_path, mode='w', stdout=True):
-    fmt = '%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s: %(message)s'
-
-    os.makedirs(os.path.split(log_path)[0], exist_ok=True)
-    logging.basicConfig(level=logging.DEBUG, format=fmt, filename=log_path, filemode=mode)
-
-    if stdout:
-        console = logging.StreamHandler(stream=sys.stdout)
-        console.setLevel(logging.DEBUG)
-        formatter = logging.Formatter(fmt)
-        console.setFormatter(formatter)
-        logging.getLogger('').addHandler(console)
         
 def get_args():
     ## TODO: ここらへんを修正
     parser = argparse.ArgumentParser(description='研究用：音素に対して時間領域で処理して話者埋め込みを求めるやつ')
     parser.add_argument('--gpu', default='-1', type=str, metavar='N', help='GPU番号')
-    parser.add_argument('--log-path', default='/tmp/vc-03.log', type=str, metavar='N', help='ログファイルのパス')
+    parser.add_argument('--log-path', default='dest/%(datetime)s/general.log', type=str, metavar='N', help='ログファイルのパス')
     parser.add_argument('--load-weights-path', type=str, metavar='N', help='読み込み元のウェイトファイルのパス')
-    parser.add_argument('--weights-path', default='/tmp/vc-alpha.pth', type=str, metavar='N', help='保存先のウェイトファイルのパス')
+    parser.add_argument('--weights-path', default='dest/%(datetime)s/weights.pth', type=str, metavar='N', help='保存先のウェイトファイルのパス')
     parser.add_argument('--nphonemes-path', default='resource/jvs_ver1_nphonemes_%(condition)s.txt', type=str, metavar='N', help='音素長データのパス')
     parser.add_argument('--patience', default=8, type=int, metavar='N', help='Early Stoppingまでの回数')
     parser.add_argument('--dataset-path', default='resource/jvs_ver1_phonemes/jvs%(person)03d/VOICEACTRESS100_%(voice)03d_%(deform_type)s.npz', type=str, metavar='N', help='データセットのパス')
@@ -60,7 +47,28 @@ def get_args():
     parser.add_argument('-by', '--phoneme-batch-size', default=16, type=int, metavar='N', help='バッチ内の話者数')
     
     args = vars(parser.parse_args(sys.argv[1:]))
+
+    specific = {
+        'datetime': datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    }
+
+    args['log_path']     = args['log_path'] % specific
+    args['weights_path'] = args['weights_path'] % specific
+
     return args
+
+def init_logger(log_path, mode='w', stdout=True):
+    fmt = '%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s: %(message)s'
+
+    os.makedirs(os.path.split(log_path)[0], exist_ok=True)
+    logging.basicConfig(level=logging.DEBUG, format=fmt, filename=log_path, filemode=mode)
+
+    if stdout:
+        console = logging.StreamHandler(stream=sys.stdout)
+        console.setLevel(logging.DEBUG)
+        formatter = logging.Formatter(fmt)
+        console.setFormatter(formatter)
+        logging.getLogger('').addHandler(console)
 
 def main(cfg):
     person_no_list = [8, 16, 17, 21, 23, 29, 35, 37, 42, 46, 47, 50, 54, 58, 59, 73, 88, 97]
@@ -77,6 +85,7 @@ def main(cfg):
     if cfg.load_weights_path:
         load_weights(model, cfg.load_weights_path)
 
+    os.makedirs(os.path.split(cfg.weights_path)[0], exist_ok=True)
     train_loader = DataLoader(known_person_list, train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
     valid_loader = DataLoader(known_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
     history = learn(model, (train_loader, valid_loader), cfg.weights_path, leaning_rate=1e-4, patience=cfg.patience)
@@ -177,8 +186,8 @@ def valid(model, loader, criterion):
             valid_loss += loss.item()
             valid_acc  += pred.argmax(dim=1).eq(true).sum().item()
 
-    valid_loss /= len(loader)
-    valid_acc  /= len(loader)
+    valid_loss /= len(loader) * len(true)
+    valid_acc  /= len(loader) * len(true)
     return valid_loss, valid_acc
 
 def predict(model, loader):
