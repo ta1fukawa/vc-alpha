@@ -30,6 +30,7 @@ def init_logger(log_path, mode='w', stdout=True):
         logging.getLogger('').addHandler(console)
         
 def get_args():
+    ## TODO: ここらへんを修正
     parser = argparse.ArgumentParser(description='研究用：音素に対して時間領域で処理して話者埋め込みを求めるやつ')
     parser.add_argument('--gpu', default='-1', type=str, metavar='N', help='GPU番号')
     parser.add_argument('--log-path', default='/tmp/vc-03.log', type=str, metavar='N', help='ログファイルのパス')
