@@ -75,7 +75,7 @@ for person in range(100):
             label['label'].append(phoneme)
             
         np.savez_compressed(dst % { **specific, 'deform_type': 'variable' }, **variable, **label)
-        np.savez_compressed(dst % { **specific, 'deform_type': 'stretch' }, **variable, **label)
+        np.savez_compressed(dst % { **specific, 'deform_type': 'stretch' }, **stretch, **label)
         os.symlink(os.path.split(dst)[1] % { **specific, 'deform_type': 'stretch' }, dst % { **specific, 'deform_type': 'padding' })
 
     
