@@ -91,6 +91,7 @@ class DataLoader(torch.utils.data.Dataset):
                     'deform_type': self.deform_type,
                 }
                 pack = np.load(self.dataset_path % specific, allow_pickle=True)
+                sp   = pack['sp']
                 
                 if self.deform_type in ['variable', 'stretch']:
                     sp = np.array(sp)
@@ -98,7 +99,7 @@ class DataLoader(torch.utils.data.Dataset):
                 if self.deform_type == 'padding':
                     sp = np.array([self._zero_padding(x[:self.phonemes_length], self.phonemes_length) for x in sp])
                     
-                sp = pack['sp'][:, :, 1:]  # 定数成分を除外
+                sp = sp[:, :, 1:]  # 定数成分を除外
 
                 person_data.extend(sp)
             data.extend(person_data[voice_start_phoneme:voice_end_phoneme])
