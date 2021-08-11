@@ -28,8 +28,9 @@ def get_args():
     parser.add_argument('--weights-path', default='dest/%(datetime)s/weights.pth', type=str, metavar='PATH', help='保存先のウェイトファイルのパス')
     parser.add_argument('--nphonemes-path', default='resource/jvs_ver1_nphonemes_%(condition)s.txt', type=str, metavar='PATH', help='音素長データのパス')
     
-    parser.add_argument('--no-learn', default=True, action='store_true', help='学習の有無')
-    parser.add_argument('--patience', default=8, type=int, metavar='N', help='Early Stoppingまでの回数')
+    parser.add_argument('--model-dims', default=2, type=int, metavar='N', help='モデルのConv1d/Conv2dの選択')
+    parser.add_argument('--no-learn', action='store_true', help='学習の有無')
+    parser.add_argument('--patience', default=4, type=int, metavar='N', help='Early Stoppingまでの回数')
     parser.add_argument('--dataset-path', default='resource/jvs_ver1_phonemes/jvs%(person)03d/VOICEACTRESS100_%(voice)03d_%(deform_type)s.npz', type=str, metavar='PATH', help='データセットのパス')
     parser.add_argument('--batch-length-person', default=16, type=int, metavar='N', help='各バッチの話者数')
     parser.add_argument('--batch-length-phoneme', default=32, type=int, metavar='N', help='各バッチの音素数')
@@ -98,11 +99,13 @@ def main(cfg):
     model = FullModel(1, cfg.nfft // 2, len(known_person_list)).to('cuda')
     logging.info('Model:\n' + str(model))
     if cfg.load_weights_path:
-        logging.info('Loading model: ', cfg.load_weights_path)
+        logging.info('Loading model: ' + str(cfg.load_weights_path))
+
         load_weights(model, cfg.load_weights_path)
 
     if not cfg.no_learn:
         logging.info('Start learning')
+
         os.makedirs(os.path.split(cfg.weights_path)[0], exist_ok=True)
         train_loader = DataLoader(known_person_list, train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
         valid_loader = DataLoader(known_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
@@ -110,6 +113,10 @@ def main(cfg):
         logging.info('History:\n' + json.dumps(history))
 
     logging.info('Start evaluation')
+
+    # 時間がかかりすぎるので……
+    # train_voice_list    = list(filter(lambda x:x not in voice_no_list, np.arange(calc_file_idx(voice_no_list, 8))))
+
     known_train_loader   = DataLoader(known_person_list, train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
     known_eval_loader    = DataLoader(known_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
     unknown_train_loader = DataLoader(unknown_person_list, train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
@@ -132,7 +139,7 @@ def load_weights(model, weights_path):
 
     model.load_state_dict(torch.load(existing_weights_paths[-1]))
 
-def learn(model, loaders, weights_path, leaning_rate=1e-4, patience=8):
+def learn(model, loaders, weights_path, leaning_rate, patience):
 
     criterion = torch.nn.NLLLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=leaning_rate)
