@@ -20,7 +20,7 @@ def get_args():
     ## TODO: ここらへんを修正
     parser = argparse.ArgumentParser(description='研究用：音素に対して時間領域で処理して話者埋め込みを求めるやつ')
     parser.add_argument('--gpu', default='0', type=str, metavar='N', help='GPU番号')
-    parser.add_argument('--output-dir-format', default='dest/%(deform_type)s-%(embed_dims)d/%(datetime)s/general.log', type=str, metavar='PATH', help='出力先ディレクトリの書式付きパス')
+    parser.add_argument('--output-dir-format', default='dest/%(deform_type)s-%(model_dims)d/%(datetime)s/general.log', type=str, metavar='PATH', help='出力先ディレクトリの書式付きパス')
     parser.add_argument('--dataset-path', default='resource/jvs_ver1_phonemes/jvs%(person)03d/VOICEACTRESS100_%(voice)03d_%(deform_type)s.npz', type=str, metavar='PATH', help='データセットの書式付きパス')
     parser.add_argument('--nphonemes-path', default='resource/jvs_ver1_nphonemes_%(condition)s.txt', type=str, metavar='PATH', help='音素長データのパス')
     
@@ -257,7 +257,7 @@ if __name__ == '__main__':
     now = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     specific = {
         'deform-type': args['deform_type'],
-        'embed_dims' : args['embed_dims'],
+        'model_dims' : args['model_dims'],
     }
 
     args['output_dir']      = args['output_dir_format'] % { **specific, 'datetime': now }
