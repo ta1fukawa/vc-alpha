@@ -8,9 +8,7 @@ import sys
 import json
 
 import easydict
-import librosa
 import numpy as np
-import requests
 import torch
 import tqdm
 from sklearn import multiclass, svm
@@ -46,6 +44,7 @@ def get_args():
     parser.add_argument('-pu', '--person-unknown-size', default=16, type=int, metavar='N', help='未知の話者として使用する話者数')
     parser.add_argument('-vt', '--voice-train-size', default=64, type=int, metavar='N', help='学習に使用する音声ファイル数')
     parser.add_argument('-vc', '--voice-check-size', default=8, type=int, metavar='N', help='検証に使用する音声ファイル数')
+    parser.add_argument('--svm-voice-train-size', default=16, type=int, metavar='N', help='SVMの学習に使用する音声ファイル数')
     
     args = vars(parser.parse_args(sys.argv[1:]))
     return args
@@ -110,12 +109,12 @@ def main(cfg):
         train_loader = DataLoader(known_person_list, train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
         valid_loader = DataLoader(known_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
         history = learn(model, (train_loader, valid_loader), cfg.weights_path, leaning_rate=1e-4, patience=cfg.patience)
-        logging.info('History:\n' + json.dumps(history))
+        logging.info('History:\n' + json.dumps(history, ensure_ascii=False, indent=4))
 
     logging.info('Start evaluation')
 
     # 時間がかかりすぎるので……
-    # train_voice_list    = list(filter(lambda x:x not in voice_no_list, np.arange(calc_file_idx(voice_no_list, 8))))
+    train_voice_list    = list(filter(lambda x:x not in voice_no_list, np.arange(calc_file_idx(voice_no_list, cfg.svm_voice_train_size))))
 
     known_train_loader   = DataLoader(known_person_list, train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
     known_eval_loader    = DataLoader(known_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
@@ -270,6 +269,6 @@ if __name__ == '__main__':
         backup_code(['python/*.py'], cfg.code_backup)
 
     init_logger(cfg.log_path)
-    logging.debug(json.dumps(args))
+    logging.debug('Config:\n' + json.dumps(args, ensure_ascii=False, indent=4))
 
     main(cfg)
