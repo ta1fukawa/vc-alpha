@@ -20,7 +20,7 @@ def get_args():
     ## TODO: ここらへんを修正
     parser = argparse.ArgumentParser(description='研究用：音素に対して時間領域で処理して話者埋め込みを求めるやつ')
     parser.add_argument('--gpu', default='0', type=str, metavar='N', help='GPU番号')
-    parser.add_argument('--output-dir-format', default='dest/%(deform_type)s-%(model_dims)d/%(datetime)s/general.log', type=str, metavar='PATH', help='出力先ディレクトリの書式付きパス')
+    parser.add_argument('--output-dir-format', default='dest/%(deform_type)s-%(model_dims)d/%(datetime)s/', type=str, metavar='PATH', help='出力先ディレクトリの書式付きパス')
     parser.add_argument('--dataset-path', default='resource/jvs_ver1_phonemes/jvs%(person)03d/VOICEACTRESS100_%(voice)03d_%(deform_type)s.npz', type=str, metavar='PATH', help='データセットの書式付きパス')
     parser.add_argument('--nphonemes-path', default='resource/jvs_ver1_nphonemes_%(condition)s.txt', type=str, metavar='PATH', help='音素長データのパス')
     
@@ -70,8 +70,8 @@ def main(cfg):
     person_no_list = np.array([8, 16, 17, 21, 23, 29, 35, 37, 42, 46, 47, 50, 54, 58, 59, 73, 88, 97])
     voice_no_list  = np.array([5, 18, 24, 40, 42, 44, 46, 55, 56, 59, 60, 61, 63, 65, 71, 73, 75, 81, 84, 85, 87, 93, 94, 98])
     
-    logging.debug('person_no_list: ' + json.dumps(person_no_list, ensure_ascii=False))
-    logging.debug('voice_no_list: ' + json.dumps(voice_no_list, ensure_ascii=False))
+    logging.debug('person_no_list: ' + str(person_no_list))
+    logging.debug('voice_no_list: ' + str(voice_no_list))
 
     batch_size = (cfg.batch_length_person, cfg.batch_length_phoneme)
 
@@ -98,10 +98,10 @@ def main(cfg):
     logging.info('Model:\n' + str(model))
 
     if not cfg.no_load_weights:
-        load_weights(model, sys.path.join(cfg.output_wild_dir, 'weights.pth'))
+        load_weights(model, os.path.join(cfg.output_wild_dir, 'weights.pth'))
 
     if not cfg.no_learn:
-        weights_path = sys.path.join(cfg.output_dir, 'weights.pth')
+        weights_path = os.path.join(cfg.output_dir, 'weights.pth')
         logging.info('Start learning: ' + weights_path)
 
         train_loader = DataLoader(known_person_list, train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
@@ -256,7 +256,7 @@ if __name__ == '__main__':
 
     now = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     specific = {
-        'deform-type': args['deform_type'],
+        'deform_type': args['deform_type'],
         'model_dims' : args['model_dims'],
     }
 
