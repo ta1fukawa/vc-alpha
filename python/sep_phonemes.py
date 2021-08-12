@@ -76,6 +76,6 @@ for person in range(100):
             
         np.savez_compressed(dst % { **specific, 'deform_type': 'variable' }, **variable, **label)
         np.savez_compressed(dst % { **specific, 'deform_type': 'stretch' }, **stretch, **label)
-        os.symlink(os.path.split(dst)[1] % { **specific, 'deform_type': 'stretch' }, dst % { **specific, 'deform_type': 'padding' })
+        os.symlink(os.path.split(dst)[1] % { **specific, 'deform_type': 'variable' }, dst % { **specific, 'deform_type': 'padding' })
 
     
