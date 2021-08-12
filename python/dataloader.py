@@ -27,7 +27,7 @@ class DataLoader(torch.utils.data.Dataset):
         deform_type=='padding'の場合の整形後のサイズ。
     '''
 
-    def __init__(self, person_list, voice_list, batch_size, nphonemes_path, dataset_path, deform_type, phonemes_length=None):
+    def __init__(self, person_list, voice_list, batch_size, nphonemes_path, dataset_path, deform_type, phonemes_length=None, seed=None):
         self.person_list = person_list
         self.voice_list  = voice_list
         self.batch_size  = batch_size
@@ -41,7 +41,11 @@ class DataLoader(torch.utils.data.Dataset):
 
         self.person_nbatches  = len(person_list) // batch_size[0]
         self.phoneme_nbatches = np.sum(self.nphonemes_list) // batch_size[1]
-        self.shuffle          = np.arange(len(self))
+
+        if seed is not None:
+            self.reset_shuffle(seed)
+        else:
+            self.shuffle = np.arange(len(self))
 
     def __len__(self):
         return self.person_nbatches * self.phoneme_nbatches

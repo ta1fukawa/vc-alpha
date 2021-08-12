@@ -104,8 +104,8 @@ def main(cfg):
         weights_path = os.path.join(cfg.output_dir, 'weights.pth')
         logging.info('Start learning: ' + weights_path)
 
-        train_loader = DataLoader(known_person_list, train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
-        valid_loader = DataLoader(known_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
+        train_loader = DataLoader(known_person_list, train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, seed=0)
+        valid_loader = DataLoader(known_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, seed=0)
         history = learn(model, (train_loader, valid_loader), weights_path, leaning_rate=1e-4, patience=cfg.patience)
         logging.info('History:\n' + json.dumps(history, ensure_ascii=False, indent=4))
 
