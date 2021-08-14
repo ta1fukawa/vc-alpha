@@ -15,34 +15,40 @@ from sklearn import multiclass, svm
 
 from dataloader import DataLoader
 from models import FullModel
+from omake import console_menu, console_inputarea
 
 def get_args():
     ## TODO: ここらへんを修正
     parser = argparse.ArgumentParser(description='研究用：音素に対して時間領域で処理して話者埋め込みを求めるやつ')
-    parser.add_argument('--gpu', default='0', type=str, metavar='N', help='GPU番号')
-    parser.add_argument('--output-dir-format', default='dest/%(deform_type)s-%(model_dims)d/%(datetime)s/', type=str, metavar='PATH', help='出力先ディレクトリの書式付きパス')
-    parser.add_argument('--dataset-path', default='resource/jvs_ver1_phonemes/jvs%(person)03d/VOICEACTRESS100_%(voice)03d_%(deform_type)s.npz', type=str, metavar='PATH', help='データセットの書式付きパス')
-    parser.add_argument('--nphonemes-path', default='resource/jvs_ver1_nphonemes_%(condition)s.txt', type=str, metavar='PATH', help='音素長データのパス')
+    parser.add_argument('--gpu',      default=None,    type=str, metavar='N',    help='GPU番号')
+    parser.add_argument('--dest-dir', default='dest', type=str, metavar='PATH', help='出力先ディレクトリのパス')
+    parser.add_argument('--code-id',  default='',     type=str, metavar='ID',   help='プログラムコードの識別コード')
+
+    parser.add_argument('--nphonemes-path',   default='resource/jvs_ver1_nphonemes_%(condition)s.txt', type=str, metavar='PATH', help='音素長データの書式付きパス')
+    parser.add_argument('--dataset-dir',      default='resource/jvs_ver1_phonemes',                    type=str, metavar='PATH', help='データセットの書式付きパス')
+    parser.add_argument('--fast-dataset-dir', default=None,                                            type=str, metavar='PATH', help='データセットの書式付きパス（Fast）')
     
-    parser.add_argument('--model-dims', default=2, type=int, metavar='N', help='モデルのConv1d/Conv2dの選択')
+    parser.add_argument('-x', '--model-dims', default=None, type=int, metavar='N', help='モデルのConv1d/Conv2dの選択')
+    parser.add_argument('--patience',         default=4,    type=int, metavar='N', help='Early Stoppingまでの回数')
+    
     parser.add_argument('--no-load-weights', action='store_true', help='重み読み込みの有無')
-    parser.add_argument('--no-learn', action='store_true', help='学習の有無')
-    parser.add_argument('--patience', default=4, type=int, metavar='N', help='Early Stoppingまでの回数')
+    parser.add_argument('--no-learn',        action='store_true', help='学習の有無')
 
-    parser.add_argument('-sr', '--sampling-rate', default=24000, type=int, metavar='N', help='サンプリング周波数')
-    parser.add_argument('--nfft', default=1024, type=int, metavar='N', help='STFTのウィンドウ幅（通常はPyWorldに依存）')
-    parser.add_argument('--nhop', default=120, type=int, metavar='N', help='STFTのシフト幅（通常はPyWorldに依存）')
-    parser.add_argument('-d', '--deform-type', default='stretch', type=str, metavar='TYPE', help='変形の種類')
+    parser.add_argument('--sampling-rate', default=24000, type=int, metavar='N', help='サンプリング周波数')
+    parser.add_argument('--nfft',          default=1024,  type=int, metavar='N', help='STFTのウィンドウ幅（通常はPyWorldに依存）')
+    parser.add_argument('--nhop',          default=120,   type=int, metavar='N', help='STFTのシフト幅（通常はPyWorldに依存）')
 
-    parser.add_argument('--batch-length-person', default=16, type=int, metavar='N', help='各バッチの話者数')
-    parser.add_argument('--batch-length-phoneme', default=32, type=int, metavar='N', help='各バッチの音素数')
-    parser.add_argument('--phonemes-length', default=32, type=int, metavar='N', help='音素の時間長')
+    parser.add_argument('-d', '--deform-type', default=None, type=str, metavar='TYPE', help='変形の種類（variableの場合はバッチサイズを(1, 1)にする）')
 
-    parser.add_argument('-pk', '--person-known-size', default=16, type=int, metavar='N', help='既知の話者として使用する話者数')
-    parser.add_argument('-pu', '--person-unknown-size', default=16, type=int, metavar='N', help='未知の話者として使用する話者数')
-    parser.add_argument('-vt', '--voice-train-size', default=64, type=int, metavar='N', help='学習に使用する音声ファイル数')
-    parser.add_argument('-vc', '--voice-check-size', default=8, type=int, metavar='N', help='検証に使用する音声ファイル数')
-    parser.add_argument('--svm-voice-train-size', default=8, type=int, metavar='N', help='SVMの学習に使用する音声ファイル数')
+    parser.add_argument('-bs', '--batch-length-person',  default=1,  type=int, metavar='N', help='各バッチの話者数')
+    parser.add_argument('-bp', '--batch-length-phoneme', default=1,  type=int, metavar='N', help='各バッチの音素数')
+    parser.add_argument('--phonemes-length',             default=32, type=int, metavar='N', help='音素の時間長')
+
+    parser.add_argument('-pk', '--person-known-size',        default=16, type=int, metavar='N', help='既知の話者として使用する話者数')
+    parser.add_argument('-pu', '--person-unknown-size',      default=16, type=int, metavar='N', help='未知の話者として使用する話者数')
+    parser.add_argument('-vt', '--voice-train-size',         default=64, type=int, metavar='N', help='学習に使用する音声ファイル数')
+    parser.add_argument('-vc', '--voice-check-size',         default=8,  type=int, metavar='N', help='検証に使用する音声ファイル数')
+    parser.add_argument('-svm-vt', '--svm-voice-train-size', default=8,  type=int, metavar='N', help='SVMの学習に使用する音声ファイル数')
     
     args = vars(parser.parse_args(sys.argv[1:]))
     return args
@@ -104,8 +110,8 @@ def main(cfg):
         weights_path = os.path.join(cfg.output_dir, 'weights.pth')
         logging.info('Start learning: ' + weights_path)
 
-        train_loader = DataLoader(known_person_list, train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, seed=0)
-        valid_loader = DataLoader(known_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, seed=0)
+        train_loader = DataLoader(known_person_list, train_voice_list, batch_size, cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length, seed=0)
+        valid_loader = DataLoader(known_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length, seed=0)
         history = learn(model, (train_loader, valid_loader), weights_path, leaning_rate=1e-4, patience=cfg.patience)
         logging.info('History:\n' + json.dumps(history, ensure_ascii=False, indent=4))
 
@@ -114,8 +120,8 @@ def main(cfg):
     # SVMは無駄に時間がかかりすぎるので……
     svm_train_voice_list = list(filter(lambda x:x not in voice_no_list, np.arange(calc_file_idx(voice_no_list, cfg.svm_voice_train_size))))
 
-    known_train_loader   = DataLoader(known_person_list, svm_train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
-    known_eval_loader    = DataLoader(known_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
+    known_train_loader   = DataLoader(known_person_list, svm_train_voice_list, batch_size, cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length)
+    known_eval_loader    = DataLoader(known_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length)
     unknown_train_loader = DataLoader(unknown_person_list, svm_train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
     unknown_eval_loader  = DataLoader(unknown_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
     known_train_embed_pred, known_train_embed_true     = predict(model.embed, known_train_loader)
@@ -254,17 +260,46 @@ def calc_svm_matrix(train_data, train_true, eval_data, eval_true, nclasses):
 if __name__ == '__main__':
     args = get_args()
 
+    # GPU番号
+    if args['gpu'] is None:
+        gpu_text = console_inputarea('使用するGPU番号（0以上）を入力してください', 'CPUを使用する場合は何も入力せずエンター', numeric_ok=True, lowercase_ok=False, uppercase_ok=False, sign_ok=False)
+        if gpu_text is None: exit(0)
+        args['gpu'] = gpu_text
+
+    # 時間幅変形の方法
+    if args['deform_type'] is None:
+        deform_types = ['stretch', 'padding', 'variable']
+        selected_no = console_menu('時間幅変形の方法を選択してください', deform_types)
+        if selected_no < 0: exit(0)
+        args['deform_type'] = deform_types[selected_no]
+
+    # 畳み込み次元数
+    if args['model_dims'] is None:
+        selected_no = console_menu('CNNの次元数を選択してください', ['1次元（Conv1d）', '2次元（Conv2d）'])
+        if selected_no < 0: exit(0)
+        args['model_dims'] = selected_no + 1
+
+    # 出力先のパス
     now = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     specific = {
         'deform_type': args['deform_type'],
         'model_dims' : args['model_dims'],
+        'code_id'    : args['code_id'],
     }
+    output_dir_format = os.path.join(args['dest_dir'], '%(deform_type)s-%(model_dims)d%(code_id)s/%(datetime)s/')
+    args['output_dir']      = output_dir_format % { **specific, 'datetime': now }
+    args['output_wild_dir'] = output_dir_format % { **specific, 'datetime': '*' }
 
-    args['output_dir']      = args['output_dir_format'] % { **specific, 'datetime': now }
-    args['output_wild_dir'] = args['output_dir_format'] % { **specific, 'datetime': '*' }
+    # データセットのパス
+    args['dataset_path'] = os.path.join(args['dataset_dir'], 'jvs%(person)03d/VOICEACTRESS100_%(voice)03d_%(deform_type)s.npz')
+    if args['fast_dataset_dir'] is not None:
+        args['fast_dataset_path'] = os.path.join(args['fast_dataset_dir'], 'jvs%(person)03d/VOICEACTRESS100_%(voice)03d_%(deform_type)s.npz')
+    else:
+        args['fast_dataset_path'] = args['dataset_path']
 
     cfg = easydict.EasyDict(args)
 
+    # CPU
     os.environ['CUDA_VISIBLE_DEVICES'] = cfg.gpu
 
     os.makedirs(cfg.output_dir, exist_ok=True)
