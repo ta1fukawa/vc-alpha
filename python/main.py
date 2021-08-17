@@ -6,6 +6,8 @@ import os
 import shutil
 import sys
 import json
+import warnings
+import csv
 
 import easydict
 import numpy as np
@@ -71,13 +73,14 @@ def init_logger(log_path, mode='w', stdout=True):
         logging.getLogger('').addHandler(console)
 
 def main(cfg):
+    warnings.filterwarnings('ignore')
     logging.debug('Config:\n' + json.dumps(args, ensure_ascii=False, indent=4))
 
     person_no_list = np.array([8, 16, 17, 21, 23, 29, 35, 37, 42, 46, 47, 50, 54, 58, 59, 73, 88, 97])
     voice_no_list  = np.array([5, 18, 24, 40, 42, 44, 46, 55, 56, 59, 60, 61, 63, 65, 71, 73, 75, 81, 84, 85, 87, 93, 94, 98])
     
     logging.debug('person_no_list: ' + str(person_no_list))
-    logging.debug('voice_no_list: ' + str(voice_no_list))
+    logging.debug('voice_no_list: '  + str(voice_no_list))
 
     batch_size = (cfg.batch_length_person, cfg.batch_length_phoneme)
 
@@ -92,15 +95,19 @@ def main(cfg):
 
     person_known_idx   = calc_file_idx(person_no_list, cfg.person_known_size)
     person_unknown_idx = calc_file_idx(person_no_list, cfg.person_known_size + cfg.person_unknown_size)
-    voice_train_idx    = calc_file_idx(voice_no_list, cfg.voice_train_size)
-    voice_check_idx    = calc_file_idx(voice_no_list, cfg.voice_train_size + cfg.voice_check_size)
+    voice_train_idx    = calc_file_idx(voice_no_list,  cfg.voice_train_size)
+    voice_check_idx    = calc_file_idx(voice_no_list,  cfg.voice_train_size  + cfg.voice_check_size)
 
     known_person_list   = list(filter(lambda x:x not in person_no_list, np.arange(person_known_idx)))
     unknown_person_list = list(filter(lambda x:x not in person_no_list, np.arange(person_known_idx, person_unknown_idx)))
-    train_voice_list    = list(filter(lambda x:x not in voice_no_list, np.arange(voice_train_idx)))
-    check_voice_list    = list(filter(lambda x:x not in voice_no_list, np.arange(voice_train_idx, voice_check_idx)))
+    train_voice_list    = list(filter(lambda x:x not in voice_no_list,  np.arange(voice_train_idx)))
+    check_voice_list    = list(filter(lambda x:x not in voice_no_list,  np.arange(voice_train_idx, voice_check_idx)))
 
-    model = FullModel(cfg.model_dims, cfg.nfft // 2, len(known_person_list)).to('cuda')
+    if cfg.deform_type == 'variable':
+        kernel_size = (1, 4)
+    else:
+        kernel_size = (2, 4)
+    model = FullModel(cfg.model_dims, cfg.nfft // 2, len(known_person_list), kernel_size).to('cuda')
     logging.info('Model:\n' + str(model))
 
     if not cfg.no_load_weights:
@@ -120,20 +127,24 @@ def main(cfg):
     # SVMは無駄に時間がかかりすぎるので……
     svm_train_voice_list = list(filter(lambda x:x not in voice_no_list, np.arange(calc_file_idx(voice_no_list, cfg.svm_voice_train_size))))
 
-    known_train_loader   = DataLoader(known_person_list, svm_train_voice_list, batch_size, cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length)
-    known_eval_loader    = DataLoader(known_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length)
-    unknown_train_loader = DataLoader(unknown_person_list, svm_train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
-    unknown_eval_loader  = DataLoader(unknown_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length)
+    known_train_loader   = DataLoader(known_person_list,  svm_train_voice_list, batch_size,  cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length)
+    known_eval_loader    = DataLoader(known_person_list,  check_voice_list, batch_size,      cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length)
+    unknown_train_loader = DataLoader(unknown_person_list, svm_train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path,      cfg.deform_type, cfg.phonemes_length)
+    unknown_eval_loader  = DataLoader(unknown_person_list, check_voice_list, batch_size,     cfg.nphonemes_path, cfg.dataset_path,      cfg.deform_type, cfg.phonemes_length)
     known_train_embed_pred, known_train_embed_true     = predict(model.embed, known_train_loader)
     known_eval_embed_pred, known_eval_embed_true       = predict(model.embed, known_eval_loader)
     unknown_train_embed_pred, unknown_train_embed_true = predict(model.embed, unknown_train_loader)
     unknown_eval_embed_pred, unknown_eval_embed_true   = predict(model.embed, unknown_eval_loader)
-    known_svm_confusion_matrix   = calc_svm_matrix(known_train_embed_pred, known_train_embed_true, known_eval_embed_pred, known_eval_embed_true, cfg.person_known_size)
+    known_svm_confusion_matrix   = calc_svm_matrix(known_train_embed_pred,   known_train_embed_true,   known_eval_embed_pred,   known_eval_embed_true,   cfg.person_known_size)
     unknown_svm_confusion_matrix = calc_svm_matrix(unknown_train_embed_pred, unknown_train_embed_true, unknown_eval_embed_pred, unknown_eval_embed_true, cfg.person_unknown_size)
     known_svm_acc_rate   = np.trace(known_svm_confusion_matrix).astype(np.int)
     unknown_svm_acc_rate = np.trace(unknown_svm_confusion_matrix).astype(np.int)
     logging.info(f'Known accuracy: {known_svm_acc_rate / len(known_eval_embed_true)} ({known_svm_acc_rate}/{len(known_eval_embed_true)})')
     logging.info(f'Unknown accuracy: {unknown_svm_acc_rate / len(unknown_eval_embed_true)} ({unknown_svm_acc_rate}/{len(unknown_eval_embed_true)})')
+    with open(os.path.join(cfg.output_dir, 'known_svm_confmat.csv'), 'w') as f:
+        csv.writer(f).writerows(known_svm_confusion_matrix)
+    with open(os.path.join(cfg.output_dir, 'unknown_svm_confmat.csv'), 'w') as f:
+        csv.writer(f).writerows(unknown_svm_confusion_matrix)
 
 def load_weights(model, weights_path):
     existing_weights_paths = sorted(glob.glob(weights_path))
