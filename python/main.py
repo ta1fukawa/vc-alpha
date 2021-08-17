@@ -297,7 +297,7 @@ if __name__ == '__main__':
         'model_dims' : args['model_dims'],
         'code_id'    : args['code_id'],
     }
-    output_dir_format = os.path.join(args['dest_dir'], '%(deform_type)s-%(model_dims)d%(code_id)s/%(datetime)s/')
+    output_dir_format = os.path.join(args['dest_dir'], '%(code_id)s/%(deform_type)s-%(model_dims)d/%(datetime)s/')
     args['output_dir']      = output_dir_format % { **specific, 'datetime': now }
     args['output_wild_dir'] = output_dir_format % { **specific, 'datetime': '*' }
 
