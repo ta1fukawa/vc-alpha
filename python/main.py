@@ -22,9 +22,9 @@ from omake import console_menu, console_inputarea
 def get_args():
     ## TODO: ここらへんを修正
     parser = argparse.ArgumentParser(description='研究用：音素に対して時間領域で処理して話者埋め込みを求めるやつ')
-    parser.add_argument('--gpu',      default=None,    type=str, metavar='N',    help='GPU番号')
-    parser.add_argument('--dest-dir', default='dest', type=str, metavar='PATH', help='出力先ディレクトリのパス')
-    parser.add_argument('--code-id',  default='',     type=str, metavar='ID',   help='プログラムコードの識別コード')
+    parser.add_argument('--gpu',      default=None,      type=str, metavar='N',    help='GPU番号')
+    parser.add_argument('--dest-dir', default='dest',    type=str, metavar='PATH', help='出力先ディレクトリのパス')
+    parser.add_argument('--code-id',  default='default', type=str, metavar='ID',   help='プログラムコードの識別コード')
 
     parser.add_argument('--nphonemes-path',   default='resource/jvs_ver1_nphonemes_%(condition)s.txt', type=str, metavar='PATH', help='音素長データの書式付きパス')
     parser.add_argument('--dataset-dir',      default='resource/jvs_ver1_phonemes',                    type=str, metavar='PATH', help='データセットの書式付きパス')
