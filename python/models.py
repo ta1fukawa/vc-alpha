@@ -27,9 +27,9 @@ class EmbedModel1d(torch.nn.Module):
             self.drop5  = torch.nn.Dropout(p=0.2)
             self.line5  = torch.nn.Linear(4096, 512)
         elif self.model_type == 'linear':
-            self.conv5  = torch.nn.Conv1d(1024, 512, kernel_size=3, stride=1, dilation=1, padding='same')
+            self.conv5  = torch.nn.Conv1d(1024, 2048, kernel_size=3, stride=1, dilation=1, padding='same')
             self.drop5  = torch.nn.Dropout(p=0.2)
-            self.line5  = torch.nn.Linear(512 * n_frames, 512)
+            self.line5  = torch.nn.Linear(2048 * n_frames, 512)
             
     def _stats_pooling(self, x):
         mean = torch.mean(x, dim=2)
@@ -56,9 +56,11 @@ class EmbedModel1d(torch.nn.Module):
         x = self.drop4(x)
 
         if self.model_type == 'stats_pooling':
-            x = self._stats_pooling(self.conv5(x))
+            x = self.conv5(x)
+            x = self._stats_pooling(x)
             x = self.line5(self.drop5(x))
         elif self.model_type == 'linear':
+            x = self.conv5(x)
             x = torch.reshape(x, [x.shape[0], x.shape[1] * x.shape[2]])
             x = self.line5(self.drop5(x))
 
