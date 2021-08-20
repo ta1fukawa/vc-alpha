@@ -315,6 +315,4 @@ if __name__ == '__main__':
 
     init_logger(os.path.join(cfg.output_dir, 'general.log'))
 
-    cfg.model_type = 'linear'
-
     main(cfg)
