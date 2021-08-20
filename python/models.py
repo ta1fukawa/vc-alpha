@@ -8,24 +8,21 @@ class EmbedModel1d(torch.nn.Module):
         self.conv1a = torch.nn.Conv1d(sp_length, 512, kernel_size=3, stride=1, dilation=1, padding='same')
         self.conv1b = torch.nn.Conv1d(512, 512, kernel_size=3, stride=1, dilation=1, padding='same')
         self.drop1  = torch.nn.Dropout(p=0.2)
-        self.bnrm1  = torch.nn.BatchNorm1d(512)
 
         self.conv2a = torch.nn.Conv1d(512, 768, kernel_size=3, stride=1, dilation=1, padding='same')
         self.conv2b = torch.nn.Conv1d(768, 768, kernel_size=3, stride=1, dilation=1, padding='same')
         self.drop2  = torch.nn.Dropout(p=0.2)
-        self.bnrm2  = torch.nn.BatchNorm1d(768)
 
         self.conv3a = torch.nn.Conv1d(768, 1024, kernel_size=3, stride=1, dilation=1, padding='same')
         self.conv3b = torch.nn.Conv1d(1024, 1024, kernel_size=3, stride=1, dilation=1, padding='same')
         self.drop3  = torch.nn.Dropout(p=0.2)
-        self.bnrm3  = torch.nn.BatchNorm1d(1024)
 
         self.conv4a = torch.nn.Conv1d(1024, 1536, kernel_size=3, stride=1, dilation=1, padding='same')
         self.conv4b = torch.nn.Conv1d(1536, 1536, kernel_size=3, stride=1, dilation=1, padding='same')
         self.drop4  = torch.nn.Dropout(p=0.2)
-        self.bnrm4  = torch.nn.BatchNorm1d(1536)
 
         self.conv5  = torch.nn.Conv1d(1536, 2048, kernel_size=3, stride=1, dilation=1, padding='same')
+        self.drop5  = torch.nn.Dropout(p=0.2)
         self.line5  = torch.nn.Linear(4096, 512)
 
     def _stats_pooling(self, x):
@@ -38,22 +35,22 @@ class EmbedModel1d(torch.nn.Module):
 
         x = torch.nn.functional.relu(self.conv1a(x))
         x = torch.nn.functional.relu(self.conv1b(x))
-        x = self.bnrm1(self.drop1(x))
+        x = self.drop1(x)
         
         x = torch.nn.functional.relu(self.conv2a(x))
         x = torch.nn.functional.relu(self.conv2b(x))
-        x = self.bnrm2(self.drop2(x))
+        x = self.drop2(x)
         
         x = torch.nn.functional.relu(self.conv3a(x))
         x = torch.nn.functional.relu(self.conv3b(x))
-        x = self.bnrm3(self.drop3(x))
+        x = self.drop3(x)
         
         x = torch.nn.functional.relu(self.conv4a(x))
         x = torch.nn.functional.relu(self.conv4b(x))
-        x = self.bnrm4(self.drop4(x))
+        x = self.drop4(x)
 
         x = self._stats_pooling(self.conv5(x))
-        x = self.line5(x)
+        x = self.line5(self.drop5(x))
 
         return x
 
@@ -64,37 +61,31 @@ class EmbedModel2d(torch.nn.Module):
         self.conv1a = torch.nn.Conv2d(1, 32, kernel_size=(3, 3), stride=(1, 1), dilation=(1, 1), padding='same')
         self.conv1b = torch.nn.Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), dilation=(1, 1), padding='same')
         self.drop1  = torch.nn.Dropout2d(p=0.2)
-        self.bnrm1  = torch.nn.BatchNorm2d(32)
         self.pool1  = torch.nn.MaxPool2d(kernel_size=(1, 2))
         
         self.conv2a = torch.nn.Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), dilation=(1, 1), padding='same')
         self.conv2b = torch.nn.Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), dilation=(1, 1), padding='same')
         self.drop2  = torch.nn.Dropout2d(p=0.2)
-        self.bnrm2  = torch.nn.BatchNorm2d(64)
         self.pool2  = torch.nn.MaxPool2d(kernel_size=(1, 2))
         
         self.conv3a = torch.nn.Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), dilation=(1, 1), padding='same')
         self.conv3b = torch.nn.Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), dilation=(1, 1), padding='same')
         self.drop3  = torch.nn.Dropout2d(p=0.2)
-        self.bnrm3  = torch.nn.BatchNorm2d(128)
         self.pool3  = torch.nn.MaxPool2d(kernel_size=(1, 2))
         
         self.conv4a = torch.nn.Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), dilation=(1, 1), padding='same')
         self.conv4b = torch.nn.Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), dilation=(1, 1), padding='same')
         self.drop4  = torch.nn.Dropout2d(p=0.2)
-        self.bnrm4  = torch.nn.BatchNorm2d(256)
         self.pool4  = torch.nn.MaxPool2d(kernel_size=(1, 2))
         
         self.conv5a = torch.nn.Conv2d(256, 512, kernel_size=(3, 3), stride=(1, 1), dilation=(1, 1), padding='same')
         self.conv5b = torch.nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), dilation=(1, 1), padding='same')
         self.drop5  = torch.nn.Dropout2d(p=0.2)
-        self.bnrm5  = torch.nn.BatchNorm2d(512)
         self.pool5  = torch.nn.MaxPool2d(kernel_size=(1, 2))
         
         self.conv6a = torch.nn.Conv2d(512, 1024, kernel_size=(3, 3), stride=(1, 1), dilation=(1, 1), padding='same')
         self.conv6b = torch.nn.Conv2d(1024, 1024, kernel_size=(3, 3), stride=(1, 1), dilation=(1, 1), padding='same')
         self.drop6  = torch.nn.Dropout2d(p=0.2)
-        self.bnrm6  = torch.nn.BatchNorm2d(1024)
         self.pool6  = torch.nn.MaxPool2d(kernel_size=(1, 2))
         
         self.conv7  = torch.nn.Conv2d(1024, 2048, kernel_size=(3, 3), stride=(1, 1), dilation=(1, 1), padding='same')
@@ -110,27 +101,27 @@ class EmbedModel2d(torch.nn.Module):
 
         x = torch.nn.functional.relu(self.conv1a(x))
         x = torch.nn.functional.relu(self.conv1b(x))
-        x = self.pool1(self.bnrm1(self.drop1(x)))
+        x = self.pool1(self.drop1(x))
         
         x = torch.nn.functional.relu(self.conv2a(x))
         x = torch.nn.functional.relu(self.conv2b(x))
-        x = self.pool2(self.bnrm2(self.drop2(x)))
+        x = self.pool2(self.drop2(x))
         
         x = torch.nn.functional.relu(self.conv3a(x))
         x = torch.nn.functional.relu(self.conv3b(x))
-        x = self.pool3(self.bnrm3(self.drop3(x)))
+        x = self.pool3(self.drop3(x))
         
         x = torch.nn.functional.relu(self.conv4a(x))
         x = torch.nn.functional.relu(self.conv4b(x))
-        x = self.pool4(self.bnrm4(self.drop4(x)))
+        x = self.pool4(self.drop4(x))
         
         x = torch.nn.functional.relu(self.conv5a(x))
         x = torch.nn.functional.relu(self.conv5b(x))
-        x = self.pool5(self.bnrm5(self.drop5(x)))
+        x = self.pool4(self.drop5(x))
         
         x = torch.nn.functional.relu(self.conv6a(x))
         x = torch.nn.functional.relu(self.conv6b(x))
-        x = self.pool5(self.bnrm6(self.drop6(x)))
+        x = self.pool4(self.drop6(x))
         
         x = self._stats_pooling(self.conv7(x))
         x = self.line7(x)
@@ -150,7 +141,6 @@ class FullModel(torch.nn.Module):
 
         self.line1 = torch.nn.Linear(512, 512)
         self.drop1 = torch.nn.Dropout(p=0.2)
-        self.bnrm1  = torch.nn.BatchNorm1d(512)
 
         self.line2 = torch.nn.Linear(512, nclasses)
 
@@ -158,7 +148,7 @@ class FullModel(torch.nn.Module):
         x = self.embed(x)
 
         x = torch.nn.functional.relu(self.line1(x))
-        x = self.bnrm1(self.drop1(x))
+        x = self.drop1(x)
 
         x = torch.nn.functional.log_softmax(self.line2(x), dim=-1)
 
