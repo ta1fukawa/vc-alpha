@@ -65,8 +65,9 @@ class EmbedModel1d(torch.nn.Module):
         return x
 
 class EmbedModel2d(torch.nn.Module):
-    def __init__(self, n_freq, n_frames):
+    def __init__(self, model_type, n_freq, n_frames):
         super(EmbedModel2d, self).__init__()
+        self.model_type = model_type
         
         self.conv1a = torch.nn.Conv2d(1, 32, kernel_size=(3, 3), stride=(1, 1), dilation=(1, 1), padding='same')
         self.conv1b = torch.nn.Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), dilation=(1, 1), padding='same')
