@@ -106,7 +106,7 @@ class EmbedModel2d(torch.nn.Module):
         elif self.model_type == 'linear':
             self.conv7  = torch.nn.Conv2d(1024, 2048, kernel_size=(3, 3), stride=(1, 1), dilation=(1, 1), padding='same')
             self.drop7  = torch.nn.Dropout(p=0.2)
-            self.line7  = torch.nn.Linear(2048 * n_freq * n_frames, 512)
+            self.line7  = torch.nn.Linear(2048 * n_freq * n_frames // 2**6, 512)
 
     def _stats_pooling(self, x):
         mean = torch.mean(x, dim=[2, 3])
