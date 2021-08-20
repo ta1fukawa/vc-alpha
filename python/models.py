@@ -60,6 +60,7 @@ class EmbedModel1d(torch.nn.Module):
             x = self.line5(self.drop5(x))
         elif self.model_type == 'linear':
             x = torch.reshape(x, [x.shape[0], x.shape[1] * x.shape[2]])
+            x = self.line5(self.drop5(x))
 
         return x
 
