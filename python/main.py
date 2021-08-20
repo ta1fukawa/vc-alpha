@@ -30,8 +30,9 @@ def get_args():
     parser.add_argument('--dataset-dir',      default='resource/jvs_ver1_phonemes',                    type=str, metavar='PATH', help='データセットの書式付きパス')
     parser.add_argument('--fast-dataset-dir', default=None,                                            type=str, metavar='PATH', help='データセットの書式付きパス（Fast）')
     
-    parser.add_argument('-x', '--model-dims', default=None, type=int, metavar='N', help='モデルのConv1d/Conv2dの選択')
-    parser.add_argument('--patience',         default=4,    type=int, metavar='N', help='Early Stoppingまでの回数')
+    parser.add_argument('--model-type',       default='stats_pooling', type=str, metavar='TYPE', help='モデルの種類')
+    parser.add_argument('-x', '--model-dims', default=None,            type=int, metavar='N',    help='モデルのConv1d/Conv2dの選択')
+    parser.add_argument('--patience',         default=4,               type=int, metavar='N',    help='Early Stoppingまでの回数')
     
     parser.add_argument('--no-load-weights', action='store_true', help='重み読み込みの有無')
     parser.add_argument('--no-learn',        action='store_true', help='学習の有無')
@@ -103,7 +104,7 @@ def main(cfg):
     train_voice_list    = list(filter(lambda x:x not in voice_no_list,  np.arange(voice_train_idx)))
     check_voice_list    = list(filter(lambda x:x not in voice_no_list,  np.arange(voice_train_idx, voice_check_idx)))
 
-    model = FullModel(cfg.model_dims, cfg.nfft // 2, len(known_person_list)).to('cuda')
+    model = FullModel(cfg.model_type, cfg.model_dims, cfg.nfft // 2, cfg.phonemes_length, len(known_person_list)).to('cuda')
     logging.info('Model:\n' + str(model))
 
     if not cfg.no_load_weights:
@@ -313,5 +314,7 @@ if __name__ == '__main__':
     backup_code(['python/*.py'], cfg.output_dir)
 
     init_logger(os.path.join(cfg.output_dir, 'general.log'))
+
+    cfg.model_type = 'linear'
 
     main(cfg)

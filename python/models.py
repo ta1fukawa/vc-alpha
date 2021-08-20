@@ -2,29 +2,35 @@ import numpy as np
 import torch
 
 class EmbedModel1d(torch.nn.Module):
-    def __init__(self, sp_length):
+    def __init__(self, model_type, n_freq, n_frames):
         super(EmbedModel1d, self).__init__()
+        self.model_type = model_type
 
-        self.conv1a = torch.nn.Conv1d(sp_length, 512, kernel_size=3, stride=1, dilation=1, padding='same')
+        self.conv1a = torch.nn.Conv1d(n_freq, 512, kernel_size=3, stride=1, dilation=1, padding='same')
         self.conv1b = torch.nn.Conv1d(512, 512, kernel_size=3, stride=1, dilation=1, padding='same')
         self.drop1  = torch.nn.Dropout(p=0.2)
 
-        self.conv2a = torch.nn.Conv1d(512, 768, kernel_size=3, stride=1, dilation=1, padding='same')
-        self.conv2b = torch.nn.Conv1d(768, 768, kernel_size=3, stride=1, dilation=1, padding='same')
+        self.conv2a = torch.nn.Conv1d(512, 512, kernel_size=3, stride=1, dilation=1, padding='same')
+        self.conv2b = torch.nn.Conv1d(512, 512, kernel_size=3, stride=1, dilation=1, padding='same')
         self.drop2  = torch.nn.Dropout(p=0.2)
 
-        self.conv3a = torch.nn.Conv1d(768, 1024, kernel_size=3, stride=1, dilation=1, padding='same')
+        self.conv3a = torch.nn.Conv1d(512, 1024, kernel_size=3, stride=1, dilation=1, padding='same')
         self.conv3b = torch.nn.Conv1d(1024, 1024, kernel_size=3, stride=1, dilation=1, padding='same')
         self.drop3  = torch.nn.Dropout(p=0.2)
 
-        self.conv4a = torch.nn.Conv1d(1024, 1536, kernel_size=3, stride=1, dilation=1, padding='same')
-        self.conv4b = torch.nn.Conv1d(1536, 1536, kernel_size=3, stride=1, dilation=1, padding='same')
+        self.conv4a = torch.nn.Conv1d(1024, 1024, kernel_size=3, stride=1, dilation=1, padding='same')
+        self.conv4b = torch.nn.Conv1d(1024, 1024, kernel_size=3, stride=1, dilation=1, padding='same')
         self.drop4  = torch.nn.Dropout(p=0.2)
 
-        self.conv5  = torch.nn.Conv1d(1536, 2048, kernel_size=3, stride=1, dilation=1, padding='same')
-        self.drop5  = torch.nn.Dropout(p=0.2)
-        self.line5  = torch.nn.Linear(4096, 512)
-
+        if self.model_type == 'stats_pooling':
+            self.conv5  = torch.nn.Conv1d(1024, 2048, kernel_size=3, stride=1, dilation=1, padding='same')
+            self.drop5  = torch.nn.Dropout(p=0.2)
+            self.line5  = torch.nn.Linear(4096, 512)
+        elif self.model_type == 'linear':
+            self.conv5  = torch.nn.Conv1d(1024, 512, kernel_size=3, stride=1, dilation=1, padding='same')
+            self.drop5  = torch.nn.Dropout(p=0.2)
+            self.line5  = torch.nn.Linear(512 * n_frames, 512)
+            
     def _stats_pooling(self, x):
         mean = torch.mean(x, dim=2)
         std = torch.sqrt(torch.clamp(torch.var(x, dim=2), 1e-8, None))
@@ -49,13 +55,16 @@ class EmbedModel1d(torch.nn.Module):
         x = torch.nn.functional.relu(self.conv4b(x))
         x = self.drop4(x)
 
-        x = self._stats_pooling(self.conv5(x))
-        x = self.line5(self.drop5(x))
+        if self.model_type == 'stats_pooling':
+            x = self._stats_pooling(self.conv5(x))
+            x = self.line5(self.drop5(x))
+        elif self.model_type == 'linear':
+            x = torch.reshape(x, [x.shape[0], x.shape[1] * x.shape[2]])
 
         return x
 
 class EmbedModel2d(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, n_freq, n_frames):
         super(EmbedModel2d, self).__init__()
         
         self.conv1a = torch.nn.Conv2d(1, 32, kernel_size=(3, 3), stride=(1, 1), dilation=(1, 1), padding='same')
@@ -129,13 +138,13 @@ class EmbedModel2d(torch.nn.Module):
         return x
 
 class FullModel(torch.nn.Module):
-    def __init__(self, dim, sp_length=512, nclasses=16):
+    def __init__(self, model_type, dim, n_freq=512, n_frames=32, nclasses=16):
         super(FullModel, self).__init__()
         
         if dim == 1:
-            self.embed = EmbedModel1d(sp_length)
+            self.embed = EmbedModel1d(model_type, n_freq, n_frames)
         elif dim == 2:
-            self.embed = EmbedModel2d()
+            self.embed = EmbedModel2d(model_type, n_freq, n_frames)
         else:
             raise ValueError('引数dimは1～2である必要があります。')
 
