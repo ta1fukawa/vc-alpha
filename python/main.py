@@ -104,7 +104,11 @@ def main(cfg):
     train_voice_list    = list(filter(lambda x:x not in voice_no_list,  np.arange(voice_train_idx)))
     check_voice_list    = list(filter(lambda x:x not in voice_no_list,  np.arange(voice_train_idx, voice_check_idx)))
 
-    model = FullModel(cfg.model_type, cfg.model_dims, cfg.nfft // 2, cfg.phonemes_length, len(known_person_list)).to('cuda')
+    if cfg.deform_type == 'variable':
+        pool_size = (2, 1)
+    else:
+        pool_size = (2, 4)
+    model = FullModel(cfg.model_type, cfg.model_dims, cfg.nfft // 2, cfg.phonemes_length, len(known_person_list), pool_size).to('cuda')
     logging.info('Model:\n' + str(model))
 
     if not cfg.no_load_weights:
