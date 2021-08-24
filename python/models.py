@@ -130,9 +130,9 @@ class EmbedModel2d(torch.nn.Module):
         x = torch.nn.functional.relu(self.conv4b(x))
         x = self.pool4(self.drop4(x))
         
-        x = torch.nn.functional.relu(self.conv5a(x))
-        x = torch.nn.functional.relu(self.conv5b(x))
-        x = self.pool5(self.drop5(x))
+        # x = torch.nn.functional.relu(self.conv5a(x))
+        # x = torch.nn.functional.relu(self.conv5b(x))
+        # x = self.pool5(self.drop5(x))
         
         # x = torch.nn.functional.relu(self.conv6a(x))
         # x = torch.nn.functional.relu(self.conv6b(x))
