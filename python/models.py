@@ -89,10 +89,10 @@ class EmbedModel2d(torch.nn.Module):
         self.drop4  = torch.nn.Dropout2d(p=0.2)
         self.pool4  = torch.nn.MaxPool2d(kernel_size=pool_size)
         
-        # self.conv5a = torch.nn.Conv2d(1024, 2048, kernel_size=(3, 3), dilation=(1, 1), padding='same')
-        # self.conv5b = torch.nn.Conv2d(2048, 2048, kernel_size=(3, 3), dilation=(1, 1), padding='same')
-        # self.drop5  = torch.nn.Dropout2d(p=0.2)
-        # self.pool5  = torch.nn.MaxPool2d(kernel_size=pool_size)
+        self.conv5a = torch.nn.Conv2d(1024, 2048, kernel_size=(3, 3), dilation=(1, 1), padding='same')
+        self.conv5b = torch.nn.Conv2d(2048, 2048, kernel_size=(3, 3), dilation=(1, 1), padding='same')
+        self.drop5  = torch.nn.Dropout2d(p=0.2)
+        self.pool5  = torch.nn.MaxPool2d(kernel_size=pool_size)
         
         # self.conv6a = torch.nn.Conv2d(2048, 8192, kernel_size=(3, 3), dilation=(1, 1), padding='same')
         # self.conv6b = torch.nn.Conv2d(8192, 8192, kernel_size=(3, 3), dilation=(1, 1), padding='same')
@@ -100,10 +100,10 @@ class EmbedModel2d(torch.nn.Module):
         # self.pool6  = torch.nn.MaxPool2d(kernel_size=pool_size)
         
         if self.model_type == 'stats_pooling':
-            self.conv7  = torch.nn.Conv2d(1024, 2048, kernel_size=(3, 3), dilation=(1, 1), padding='same')
+            self.conv7  = torch.nn.Conv2d(2048, 2048, kernel_size=(3, 3), dilation=(1, 1), padding='same')
             self.line7  = torch.nn.Linear(4096, 512)
         elif self.model_type == 'linear':
-            self.conv7  = torch.nn.Conv2d(1024, 2048, kernel_size=(3, 3), dilation=(1, 1), padding='same')
+            self.conv7  = torch.nn.Conv2d(2048, 2048, kernel_size=(3, 3), dilation=(1, 1), padding='same')
             self.line7  = torch.nn.Linear(2048 * n_freq * n_frames // np.prod(pool_size)**3, 512)
 
     def _stats_pooling(self, x):
@@ -130,9 +130,9 @@ class EmbedModel2d(torch.nn.Module):
         x = torch.nn.functional.relu(self.conv4b(x))
         x = self.pool4(self.drop4(x))
         
-        # x = torch.nn.functional.relu(self.conv5a(x))
-        # x = torch.nn.functional.relu(self.conv5b(x))
-        # x = self.pool5(self.drop5(x))
+        x = torch.nn.functional.relu(self.conv5a(x))
+        x = torch.nn.functional.relu(self.conv5b(x))
+        x = self.pool5(self.drop5(x))
         
         # x = torch.nn.functional.relu(self.conv6a(x))
         # x = torch.nn.functional.relu(self.conv6b(x))
