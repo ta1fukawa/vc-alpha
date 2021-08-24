@@ -6,27 +6,27 @@ class EmbedModel1d(torch.nn.Module):
         super(EmbedModel1d, self).__init__()
         self.model_type = model_type
 
-        self.conv1a = torch.nn.Conv1d(n_freq, 1024, kernel_size=3, dilation=1, padding='same')
-        self.conv1b = torch.nn.Conv1d(1024, 1024, kernel_size=3, dilation=2, padding='same')
+        self.conv1a = torch.nn.Conv1d(n_freq, 512, kernel_size=5, dilation=1, padding='same')
+        self.conv1b = torch.nn.Conv1d(512, 512, kernel_size=5, dilation=2, padding='same')
         self.drop1  = torch.nn.Dropout(p=0.2)
 
-        self.conv2a = torch.nn.Conv1d(1024, 1024, kernel_size=3, dilation=3, padding='same')
-        self.conv2b = torch.nn.Conv1d(1024, 1024, kernel_size=3, dilation=3, padding='same')
+        self.conv2a = torch.nn.Conv1d(512, 512, kernel_size=5, dilation=3, padding='same')
+        self.conv2b = torch.nn.Conv1d(512, 512, kernel_size=5, dilation=3, padding='same')
         self.drop2  = torch.nn.Dropout(p=0.2)
 
-        self.conv3a = torch.nn.Conv1d(1024, 1024, kernel_size=3, dilation=1, padding='same')
-        self.conv3b = torch.nn.Conv1d(1024, 1024, kernel_size=3, dilation=1, padding='same')
+        self.conv3a = torch.nn.Conv1d(512, 512, kernel_size=5, dilation=1, padding='same')
+        self.conv3b = torch.nn.Conv1d(512, 512, kernel_size=5, dilation=1, padding='same')
         self.drop3  = torch.nn.Dropout(p=0.2)
 
-        # self.conv4a = torch.nn.Conv1d(1024, 1024, kernel_size=3, dilation=1, padding='same')
-        # self.conv4b = torch.nn.Conv1d(1024, 1024, kernel_size=3, dilation=1, padding='same')
+        # self.conv4a = torch.nn.Conv1d(512, 512, kernel_size=5, dilation=1, padding='same')
+        # self.conv4b = torch.nn.Conv1d(512, 512, kernel_size=5, dilation=1, padding='same')
         # self.drop4  = torch.nn.Dropout(p=0.2)
 
         if self.model_type == 'stats_pooling':
-            self.conv5  = torch.nn.Conv1d(1024, 2048, kernel_size=3, dilation=1, padding='same')
+            self.conv5  = torch.nn.Conv1d(512, 2048, kernel_size=5, dilation=1, padding='same')
             self.line5  = torch.nn.Linear(4096, 512)
         elif self.model_type == 'linear':
-            self.conv5  = torch.nn.Conv1d(1024, 1024, kernel_size=3, dilation=1, padding='same')
+            self.conv5  = torch.nn.Conv1d(512, 512, kernel_size=5, dilation=1, padding='same')
             self.line5  = torch.nn.Linear(1024 * n_frames, 512)
             
     def _stats_pooling(self, x):
