@@ -26,8 +26,8 @@ class EmbedModel1d(torch.nn.Module):
             self.conv5  = torch.nn.Conv1d(512, 2048, kernel_size=3, dilation=1, padding='same')
             self.line5  = torch.nn.Linear(4096, 512)
         elif self.model_type == 'linear':
-            self.conv5  = torch.nn.Conv1d(512, 512, kernel_size=3, dilation=1, padding='same')
-            self.line5  = torch.nn.Linear(1024 * n_frames, 512)
+            self.conv5  = torch.nn.Conv1d(512, 2048, kernel_size=3, dilation=1, padding='same')
+            self.line5  = torch.nn.Linear(2048 * n_frames, 512)
             
     def _stats_pooling(self, x):
         mean = torch.mean(x, dim=2)
