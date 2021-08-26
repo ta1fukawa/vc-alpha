@@ -79,6 +79,7 @@ def main(cfg):
 
     person_no_list = np.array([8, 16, 17, 21, 23, 29, 35, 37, 42, 46, 47, 50, 54, 58, 59, 73, 88, 97])
     voice_no_list  = np.array([5, 18, 24, 40, 42, 44, 46, 55, 56, 59, 60, 61, 63, 65, 71, 73, 75, 81, 84, 85, 87, 93, 94, 98])
+    person_no_list = np.concatenate([person_no_list, [19, 20, 25, 28, 31, 33, 36, 39, 40, 45, 48, 49, 51, 52, 53, 55, 60, 62]])  # Append
     
     logging.debug('person_no_list: ' + str(person_no_list))
     logging.debug('voice_no_list: '  + str(voice_no_list))
@@ -103,6 +104,11 @@ def main(cfg):
     unknown_person_list = list(filter(lambda x:x not in person_no_list, np.arange(person_known_idx, person_unknown_idx)))
     train_voice_list    = list(filter(lambda x:x not in voice_no_list,  np.arange(voice_train_idx)))
     check_voice_list    = list(filter(lambda x:x not in voice_no_list,  np.arange(voice_train_idx, voice_check_idx)))
+
+    logging.debug('known_person_list: '   + str(known_person_list))
+    logging.debug('unknown_person_list: ' + str(unknown_person_list))
+    logging.debug('train_voice_list: '    + str(train_voice_list))
+    logging.debug('check_voice_list: '    + str(check_voice_list))
 
     if cfg.deform_type == 'variable':
         pool_size = (1, 2)
