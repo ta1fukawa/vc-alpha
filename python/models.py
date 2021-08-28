@@ -65,46 +65,46 @@ class EmbedModel1d(torch.nn.Module):
         return x
 
 class EmbedModel2d(torch.nn.Module):
-    def __init__(self, model_type, n_freq, n_frames, pool_size=(2, 4)):
+    def __init__(self, model_type, n_freq, n_frames):
         super(EmbedModel2d, self).__init__()
         self.model_type = model_type
         
         self.conv1a = torch.nn.Conv2d(1, 32, kernel_size=(3, 3), dilation=(1, 1), padding='same')
         self.conv1b = torch.nn.Conv2d(32, 32, kernel_size=(3, 3), dilation=(1, 1), padding='same')
         self.drop1  = torch.nn.Dropout2d(p=0.2)
-        self.pool1  = torch.nn.MaxPool2d(kernel_size=pool_size)
+        self.pool1  = torch.nn.MaxPool2d(kernel_size=(1, 4))
         
         self.conv2a = torch.nn.Conv2d(32, 64, kernel_size=(3, 3), dilation=(1, 1), padding='same')
         self.conv2b = torch.nn.Conv2d(64, 64, kernel_size=(3, 3), dilation=(1, 1), padding='same')
         self.drop2  = torch.nn.Dropout2d(p=0.2)
-        self.pool2  = torch.nn.MaxPool2d(kernel_size=pool_size)
+        self.pool2  = torch.nn.MaxPool2d(kernel_size=(1, 4))
         
         self.conv3a = torch.nn.Conv2d(64, 128, kernel_size=(3, 3), dilation=(1, 1), padding='same')
         self.conv3b = torch.nn.Conv2d(128, 128, kernel_size=(3, 3), dilation=(1, 1), padding='same')
         self.drop3  = torch.nn.Dropout2d(p=0.2)
-        self.pool3  = torch.nn.MaxPool2d(kernel_size=pool_size)
+        self.pool3  = torch.nn.MaxPool2d(kernel_size=(1, 4))
         
         # self.conv4a = torch.nn.Conv2d(128, 256, kernel_size=(3, 3), dilation=(1, 1), padding='same')
         # self.conv4b = torch.nn.Conv2d(256, 256, kernel_size=(3, 3), dilation=(1, 1), padding='same')
         # self.drop4  = torch.nn.Dropout2d(p=0.2)
-        # self.pool4  = torch.nn.MaxPool2d(kernel_size=pool_size)
+        # self.pool4  = torch.nn.MaxPool2d(kernel_size=(1, 4))
         
         # self.conv5a = torch.nn.Conv2d(256, 512, kernel_size=(3, 3), dilation=(1, 1), padding='same')
         # self.conv5b = torch.nn.Conv2d(512, 512, kernel_size=(3, 3), dilation=(1, 1), padding='same')
         # self.drop5  = torch.nn.Dropout2d(p=0.2)
-        # self.pool5  = torch.nn.MaxPool2d(kernel_size=pool_size)
+        # self.pool5  = torch.nn.MaxPool2d(kernel_size=(1, 4))
         
         # self.conv6a = torch.nn.Conv2d(512, 1024, kernel_size=(3, 3), dilation=(1, 1), padding='same')
         # self.conv6b = torch.nn.Conv2d(1024, 1024, kernel_size=(3, 3), dilation=(1, 1), padding='same')
         # self.drop6  = torch.nn.Dropout2d(p=0.2)
-        # self.pool6  = torch.nn.MaxPool2d(kernel_size=pool_size)
+        # self.pool6  = torch.nn.MaxPool2d(kernel_size=(1, 4))
         
         if self.model_type == 'stats_pooling':
             self.conv7  = torch.nn.Conv2d(128, 2048, kernel_size=(3, 3), dilation=(1, 1), padding='same')
             self.line7  = torch.nn.Linear(4096, 512)
         elif self.model_type == 'linear':
             self.conv7  = torch.nn.Conv2d(128, 2048, kernel_size=(3, 3), dilation=(1, 1), padding='same')
-            self.line7  = torch.nn.Linear(2048 * n_freq * n_frames // np.prod(pool_size)**5, 512)
+            self.line7  = torch.nn.Linear(2048 * n_freq * n_frames // np.prod((1, 4))**5, 512)
 
     def _stats_pooling(self, x):
         mean = torch.mean(x, dim=[2, 3])
@@ -150,13 +150,13 @@ class EmbedModel2d(torch.nn.Module):
         return x
 
 class FullModel(torch.nn.Module):
-    def __init__(self, model_type, dim, n_freq=512, n_frames=32, nclasses=16, pool_size=(2, 4)):
+    def __init__(self, model_type, dim, n_freq=512, n_frames=32, nclasses=16):
         super(FullModel, self).__init__()
         
         if dim == 1:
             self.embed = EmbedModel1d(model_type, n_freq, n_frames)
         elif dim == 2:
-            self.embed = EmbedModel2d(model_type, n_freq, n_frames, pool_size)
+            self.embed = EmbedModel2d(model_type, n_freq, n_frames)
         else:
             raise ValueError('引数dimは1～2である必要があります。')
 

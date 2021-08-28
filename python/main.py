@@ -36,6 +36,7 @@ def get_args():
     
     parser.add_argument('--no-load-weights', action='store_true', help='重み読み込みの有無')
     parser.add_argument('--no-learn',        action='store_true', help='学習の有無')
+    parser.add_argument('--use-mel',         action='store_true', help='メルスペクトログラムの使用の有無')
 
     parser.add_argument('--sampling-rate', default=24000, type=int, metavar='N', help='サンプリング周波数')
     parser.add_argument('--nfft',          default=1024,  type=int, metavar='N', help='STFTのウィンドウ幅（通常はPyWorldに依存）')
@@ -110,11 +111,8 @@ def main(cfg):
     logging.debug('train_voice_list: '    + str(train_voice_list))
     logging.debug('check_voice_list: '    + str(check_voice_list))
 
-    if cfg.deform_type == 'variable':
-        pool_size = (1, 2)
-    else:
-        pool_size = (2, 2)
-    model = FullModel(cfg.model_type, cfg.model_dims, cfg.nfft // 2, cfg.phonemes_length, len(known_person_list), pool_size).to('cuda')
+    n_freq = 128 if cfg.use_mel else cfg.nfft // 2
+    model = FullModel(cfg.model_type, cfg.model_dims, n_freq, cfg.phonemes_length, len(known_person_list)).to('cuda')
     logging.info('Model:\n' + str(model))
 
     if not cfg.no_load_weights:
@@ -124,8 +122,8 @@ def main(cfg):
         weights_path = os.path.join(cfg.output_dir, 'weights.pth')
         logging.info('Start learning: ' + weights_path)
 
-        train_loader = DataLoader(known_person_list, train_voice_list, batch_size, cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length, seed=0)
-        valid_loader = DataLoader(known_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length, seed=0)
+        train_loader = DataLoader(known_person_list, train_voice_list, batch_size, cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length, cfg.use_mel, seed=0)
+        valid_loader = DataLoader(known_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length, cfg.use_mel, seed=0)
         history = learn(model, (train_loader, valid_loader), weights_path, leaning_rate=1e-4, patience=cfg.patience)
         logging.info('History:\n' + json.dumps(history, ensure_ascii=False, indent=4))
 
@@ -134,10 +132,10 @@ def main(cfg):
     # SVMは無駄に時間がかかりすぎるので……
     svm_train_voice_list = list(filter(lambda x:x not in voice_no_list, np.arange(calc_file_idx(voice_no_list, cfg.svm_voice_train_size))))
 
-    known_train_loader   = DataLoader(known_person_list,  svm_train_voice_list, batch_size,  cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length)
-    known_eval_loader    = DataLoader(known_person_list,  check_voice_list, batch_size,      cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length)
-    unknown_train_loader = DataLoader(unknown_person_list, svm_train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path,      cfg.deform_type, cfg.phonemes_length)
-    unknown_eval_loader  = DataLoader(unknown_person_list, check_voice_list, batch_size,     cfg.nphonemes_path, cfg.dataset_path,      cfg.deform_type, cfg.phonemes_length)
+    known_train_loader   = DataLoader(known_person_list,  svm_train_voice_list, batch_size,  cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length, cfg.use_mel)
+    known_eval_loader    = DataLoader(known_person_list,  check_voice_list, batch_size,      cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length, cfg.use_mel)
+    unknown_train_loader = DataLoader(unknown_person_list, svm_train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path,      cfg.deform_type, cfg.phonemes_length, cfg.use_mel)
+    unknown_eval_loader  = DataLoader(unknown_person_list, check_voice_list, batch_size,     cfg.nphonemes_path, cfg.dataset_path,      cfg.deform_type, cfg.phonemes_length, cfg.use_mel)
     known_train_embed_pred, known_train_embed_true     = predict(model.embed, known_train_loader)
     known_eval_embed_pred, known_eval_embed_true       = predict(model.embed, known_eval_loader)
     unknown_train_embed_pred, unknown_train_embed_true = predict(model.embed, unknown_train_loader)
@@ -324,5 +322,7 @@ if __name__ == '__main__':
     backup_code(['python/*.py'], cfg.output_dir)
 
     init_logger(os.path.join(cfg.output_dir, 'general.log'))
+
+    cfg.use_mel = True
 
     main(cfg)

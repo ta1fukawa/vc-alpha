@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import librosa
 
 class DataLoader(torch.utils.data.Dataset):
     '''
@@ -27,7 +28,7 @@ class DataLoader(torch.utils.data.Dataset):
         deform_type=='padding'の場合の整形後のサイズ。
     '''
 
-    def __init__(self, person_list, voice_list, batch_size, nphonemes_path, dataset_path, deform_type, phonemes_length=None, seed=None):
+    def __init__(self, person_list, voice_list, batch_size, nphonemes_path, dataset_path, deform_type, phonemes_length=None, mel=False, seed=None):
         self.person_list = person_list
         self.voice_list  = voice_list
         self.batch_size  = batch_size
@@ -38,6 +39,7 @@ class DataLoader(torch.utils.data.Dataset):
         self.dataset_path    = dataset_path
         self.deform_type     = deform_type
         self.phonemes_length = phonemes_length
+        self.mel             = mel
 
         self.person_nbatches  = len(person_list) // batch_size[0]
         self.phoneme_nbatches = np.sum(self.nphonemes_list) // batch_size[1]
@@ -84,6 +86,7 @@ class DataLoader(torch.utils.data.Dataset):
         voice_start_phoneme = phoneme_batch_idx * self.batch_size[1] - nphonemes_accumulation_list[voice_start_idx]
         voice_end_phoneme   = voice_start_phoneme + self.batch_size[1]
 
+        mel_basis = librosa.filters.mel(sr=24000, n_fft=1024)
         data = list()
         for person_idx in range(person_start_idx, person_end_idx):
             
@@ -96,13 +99,20 @@ class DataLoader(torch.utils.data.Dataset):
                 }
                 pack = np.load(self.dataset_path % specific, allow_pickle=True)
                 
-                # 定数成分を除外
-                if self.deform_type == 'stretch':
-                    sp = pack['sp'][:, :, 1:]
-                elif self.deform_type == 'variable':
-                    sp = np.array([x[:, 1:] for x in pack['sp']])
-                elif self.deform_type == 'padding':
-                    sp = np.array([self._zero_padding(x[:self.phonemes_length, 1:], self.phonemes_length) for x in pack['sp']])
+                if self.mel:
+                    if self.deform_type == 'stretch':
+                        sp = np.array([np.dot(x, mel_basis.T) for x in pack['sp']])
+                    elif self.deform_type == 'variable':
+                        sp = np.array([np.dot(x, mel_basis.T) for x in pack['sp']])
+                    elif self.deform_type == 'padding':
+                        sp = np.array([self._zero_padding(np.dot(x, mel_basis.T)[:self.phonemes_length], self.phonemes_length) for x in pack['sp']])
+                else:
+                    if self.deform_type == 'stretch':
+                        sp = pack['sp'][:, :, 1:]
+                    elif self.deform_type == 'variable':
+                        sp = np.array([x[:, 1:] for x in pack['sp']])
+                    elif self.deform_type == 'padding':
+                        sp = np.array([self._zero_padding(x[:self.phonemes_length, 1:], self.phonemes_length) for x in pack['sp']])
 
                 person_data.extend(sp)
             data.extend(person_data[voice_start_phoneme:voice_end_phoneme])
