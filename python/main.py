@@ -323,6 +323,4 @@ if __name__ == '__main__':
 
     init_logger(os.path.join(cfg.output_dir, 'general.log'))
 
-    cfg.use_mel = True
-
     main(cfg)
