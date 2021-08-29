@@ -60,7 +60,7 @@ for person in range(100):
                 end_frame   -= np.where(f0[start_frame:end_frame][::-1])[0][0]
             except:
                 continue
-            if start_frame + 11 <= end_frame:
+            if start_frame + 11 >= end_frame:
                 continue
 
             strech_rate = (end_frame - start_frame) / target_length
