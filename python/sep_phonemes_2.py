@@ -45,7 +45,7 @@ for person in range(100):
 
         for start_sec, end_sec, phoneme in labels:
 
-            if phoneme not in ['a', 'i', 'u', 'e', 'o', 'a:', 'i:', 'u:', 'e:', 'o:']:
+            if phoneme in ['silB', 'silE', 'sp']:
                 continue
 
             separation_rate = 200
@@ -60,7 +60,7 @@ for person in range(100):
                 end_frame   -= np.where(f0[start_frame:end_frame][::-1])[0][0]
             except:
                 continue
-            if start_frame + 1 <= end_frame:
+            if start_frame + 11 <= end_frame:
                 continue
 
             strech_rate = (end_frame - start_frame) / target_length
