@@ -30,7 +30,6 @@ def get_args():
     parser.add_argument('--dataset-dir',      default='resource/jvs_ver1_phonemes',                    type=str, metavar='PATH', help='データセットの書式付きパス')
     parser.add_argument('--fast-dataset-dir', default=None,                                            type=str, metavar='PATH', help='データセットの書式付きパス（Fast）')
     
-    parser.add_argument('--model-type',       default='stats_pooling', type=str, metavar='TYPE', help='モデルの種類')
     parser.add_argument('-x', '--model-dims', default=None,            type=int, metavar='N',    help='モデルのConv1d/Conv2dの選択')
     parser.add_argument('--patience',         default=4,               type=int, metavar='N',    help='Early Stoppingまでの回数')
     
@@ -116,7 +115,7 @@ def main(cfg):
     logging.debug('check_voice_list: '    + str(check_voice_list))
 
     n_freq = 128 if cfg.use_mel else cfg.nfft // 2
-    model = FullModel(cfg.model_type, cfg.model_dims, n_freq, cfg.phonemes_length, len(known_person_list)).to('cuda')
+    model = FullModel(cfg.model_dims, n_freq, cfg.phonemes_length, len(known_person_list)).to('cuda')
     logging.info('Model:\n' + str(model))
 
     if not cfg.no_load_weights:
