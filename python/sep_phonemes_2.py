@@ -54,10 +54,14 @@ for person in range(100):
 
             start_frame = int(float(start_sec) * separation_rate)
             end_frame   = int(float(end_sec) * separation_rate)
-            strech_rate = (end_frame - start_frame) / target_length
 
-            start_frame += np.where(f0[start_frame:end_frame])[0][0]
-            end_frame   -= np.where(f0[start_frame:end_frame][::-1])[0][0]
+            try:
+                start_frame += np.where(f0[start_frame:end_frame])[0][0]
+                end_frame   -= np.where(f0[start_frame:end_frame][::-1])[0][0]
+            except:
+                continue
+
+            strech_rate = (end_frame - start_frame) / target_length
 
             before_t = np.linspace(0, target_length - 1, end_frame - start_frame)
             after_t  = np.arange(target_length)
