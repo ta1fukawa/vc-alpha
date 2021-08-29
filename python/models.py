@@ -60,12 +60,8 @@ class EmbedModel2d(torch.nn.Module):
         self.pool3a = torch.nn.MaxPool2d(kernel_size=(1, 4))
         self.pool3b = torch.nn.AvgPool2d(kernel_size=(1, 4))
         
-        if self.model_type == 'stats_pooling':
-            self.conv7  = torch.nn.Conv2d(256, 2048, kernel_size=(5, 5), dilation=(1, 1), padding='same')
-            self.line7  = torch.nn.Linear(4096, 512)
-        elif self.model_type == 'linear':
-            self.conv7  = torch.nn.Conv2d(256, 2048, kernel_size=(5, 5), dilation=(1, 1), padding='same')
-            self.line7  = torch.nn.Linear(2048 * n_freq * n_frames // np.prod((1, 4))**5, 512)
+        self.conv7  = torch.nn.Conv2d(256, 2048, kernel_size=(5, 5), dilation=(1, 1), padding='same')
+        self.line7  = torch.nn.Linear(4096, 512)
 
     def _stats_pooling(self, x):
         mean = torch.mean(x, dim=[2, 3])
