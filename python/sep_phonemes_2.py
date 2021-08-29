@@ -45,7 +45,7 @@ for person in range(100):
 
         for start_sec, end_sec, phoneme in labels:
 
-            if phoneme in ['silB', 'silE', 'sp']:
+            if phoneme not in ['a', 'i', 'u', 'e', 'o', 'a:', 'i:', 'u:', 'e:', 'o:']:
                 continue
 
             separation_rate = 200
