@@ -160,17 +160,20 @@ class FullModel(torch.nn.Module):
         else:
             raise ValueError('引数dimは1～2である必要があります。')
 
-        self.line1 = torch.nn.Linear(512, 512)
         self.drop1 = torch.nn.Dropout(p=0.2)
 
-        self.line2 = torch.nn.Linear(512, nclasses)
+        self.line2 = torch.nn.Linear(512, 512)
+        self.drop2 = torch.nn.Dropout(p=0.2)
+
+        self.line3 = torch.nn.Linear(512, nclasses)
 
     def forward(self, x):
-        x = self.embed(x)
-
-        x = torch.nn.functional.relu(self.line1(x))
+        x = torch.nn.functional.relu(self.embed(x))
         x = self.drop1(x)
 
-        x = torch.nn.functional.log_softmax(self.line2(x), dim=-1)
+        x = torch.nn.functional.relu(self.line2(x))
+        x = self.drop2(x)
+
+        x = torch.nn.functional.log_softmax(self.line3(x), dim=-1)
 
         return x

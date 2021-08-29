@@ -106,6 +106,10 @@ def main(cfg):
     train_voice_list    = list(filter(lambda x:x not in voice_no_list,  np.arange(voice_train_idx)))
     check_voice_list    = list(filter(lambda x:x not in voice_no_list,  np.arange(voice_train_idx, voice_check_idx)))
 
+    ###
+    known_person_list   = [1, 2, 3, 5, 7, 12, 14, 69, 77, 78, 84, 90, 91, 93, 94, 95]
+    unknown_person_list = [22, 24, 26, 27, 30, 32, 34, 38, 41, 43, 44, 56, 57, 61, 63, 64]
+
     logging.debug('known_person_list: '   + str(known_person_list))
     logging.debug('unknown_person_list: ' + str(unknown_person_list))
     logging.debug('train_voice_list: '    + str(train_voice_list))
