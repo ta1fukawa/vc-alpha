@@ -132,6 +132,7 @@ dmypy.json
 .vscode/
 resource/*
 python/tmp
+python/julius4seg
 dest/
 
 Pipfile
