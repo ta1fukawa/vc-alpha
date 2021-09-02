@@ -10,7 +10,7 @@ src = 'resource/jvs_ver1_fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.wav'
 lab = 'resource/jvs_ver1_fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.lab'
 dst = 'resource/jvs_ver1_phonemes_v1/jvs%(person)03d/VOICEACTRESS100_%(idx)03d_%(deform_type)s.npz'
 
-min_sp_length = 32
+min_sp_length = 24
 min_nfile = 999
 
 for person in range(100):
@@ -43,6 +43,7 @@ for person in range(100):
 
         for start_sec, end_sec, phoneme in labels:
 
+            # if phoneme not in ['a', 'i', 'u', 'e', 'o', 'a:', 'i:', 'u:', 'e:', 'o:']:
             if phoneme in ['silB', 'silE', 'sp']:
                 continue
 
