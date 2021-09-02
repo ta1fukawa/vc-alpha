@@ -20,18 +20,16 @@ from models import FullModel
 from omake import console_menu, console_inputarea
 
 def get_args():
-    ## TODO: ここらへんを修正
     parser = argparse.ArgumentParser(description='研究用：音素に対して時間領域で処理して話者埋め込みを求めるやつ')
     parser.add_argument('--gpu',      default=None,      type=str, metavar='N',    help='GPU番号')
     parser.add_argument('--dest-dir', default='dest',    type=str, metavar='PATH', help='出力先ディレクトリのパス')
     parser.add_argument('--code-id',  default='default', type=str, metavar='ID',   help='プログラムコードの識別コード')
+    parser.add_argument('--no-backup', action='store_true', help='Pythonコードのバックアップの無効化（推奨）')
 
-    parser.add_argument('--nphonemes-path',   default='resource/jvs_ver1_nphonemes_%(condition)s.txt', type=str, metavar='PATH', help='音素長データの書式付きパス')
-    parser.add_argument('--dataset-dir',      default='resource/jvs_ver1_phonemes',                    type=str, metavar='PATH', help='データセットの書式付きパス')
-    parser.add_argument('--fast-dataset-dir', default=None,                                            type=str, metavar='PATH', help='データセットの書式付きパス（Fast）')
+    parser.add_argument('--dataset-dir', default='resource/jvs_ver1_phonemes', type=str, metavar='PATH', help='データセットの書式付きパス')
     
-    parser.add_argument('-x', '--model-dims', default=None,            type=int, metavar='N',    help='モデルのConv1d/Conv2dの選択')
-    parser.add_argument('--patience',         default=4,               type=int, metavar='N',    help='Early Stoppingまでの回数')
+    parser.add_argument('-x', '--model-dims', default=None, type=int, metavar='N', help='モデルのConv1d/Conv2dの選択')
+    parser.add_argument('--patience',         default=4,    type=int, metavar='N', help='Early Stoppingまでの回数')
     
     parser.add_argument('--no-load-weights', action='store_true', help='重み読み込みの有無')
     parser.add_argument('--no-learn',        action='store_true', help='学習の有無')
@@ -49,7 +47,7 @@ def get_args():
 
     parser.add_argument('-pk', '--person-known-size',        default=16, type=int, metavar='N', help='既知の話者として使用する話者数')
     parser.add_argument('-pu', '--person-unknown-size',      default=16, type=int, metavar='N', help='未知の話者として使用する話者数')
-    parser.add_argument('-vt', '--voice-train-size',         default=64, type=int, metavar='N', help='学習に使用する音声ファイル数')
+    parser.add_argument('-vt', '--voice-train-size',         default=32, type=int, metavar='N', help='学習に使用する音声ファイル数')
     parser.add_argument('-vc', '--voice-check-size',         default=8,  type=int, metavar='N', help='検証に使用する音声ファイル数')
     parser.add_argument('-svm-vt', '--svm-voice-train-size', default=8,  type=int, metavar='N', help='SVMの学習に使用する音声ファイル数')
     
@@ -74,40 +72,27 @@ def init_logger(log_path, mode='w', stdout=True):
         logging.getLogger('').addHandler(console)
 
 def main(cfg):
+    os.makedirs(cfg.output_dir, exist_ok=True)
+    
+    # コードのバックアップ（実行結果とコードの結びつきを管理するための臨時措置）
+    if not cfg.no_backup:
+        backup_code(['python/*.py'], cfg.output_dir)
+
+    # ログ
+    init_logger(os.path.join(cfg.output_dir, 'general.log'))
+
+    # GPU
+    os.environ['CUDA_VISIBLE_DEVICES'] = cfg.gpu
+
     warnings.filterwarnings('ignore')
     logging.debug('Config:\n' + json.dumps(args, ensure_ascii=False, indent=4))
 
-    person_no_list = np.array([8, 16, 17, 21, 23, 29, 35, 37, 42, 46, 47, 50, 54, 58, 59, 73, 88, 97])
-    voice_no_list  = np.array([5, 18, 24, 40, 42, 44, 46, 55, 56, 59, 60, 61, 63, 65, 71, 73, 75, 81, 84, 85, 87, 93, 94, 98])
-    person_no_list = np.concatenate([person_no_list, [19, 20, 25, 28, 31, 33, 36, 39, 40, 45, 48, 49, 51, 52, 53, 55, 60, 62]])  # Append
-    
-    logging.debug('person_no_list: ' + str(person_no_list))
-    logging.debug('voice_no_list: '  + str(voice_no_list))
-
     batch_size = (cfg.batch_length_person, cfg.batch_length_phoneme)
 
-    def calc_file_idx(no_list, base_size):
-        last_append_size = 0
-        while True:
-            append_size = np.count_nonzero(no_list < base_size + last_append_size)
-            if append_size == last_append_size:
-                break
-            last_append_size = append_size
-        return base_size + last_append_size
-
-    person_known_idx   = calc_file_idx(person_no_list, cfg.person_known_size)
-    person_unknown_idx = calc_file_idx(person_no_list, cfg.person_known_size + cfg.person_unknown_size)
-    voice_train_idx    = calc_file_idx(voice_no_list,  cfg.voice_train_size)
-    voice_check_idx    = calc_file_idx(voice_no_list,  cfg.voice_train_size  + cfg.voice_check_size)
-
-    known_person_list   = list(filter(lambda x:x not in person_no_list, np.arange(person_known_idx)))
-    unknown_person_list = list(filter(lambda x:x not in person_no_list, np.arange(person_known_idx, person_unknown_idx)))
-    train_voice_list    = list(filter(lambda x:x not in voice_no_list,  np.arange(voice_train_idx)))
-    check_voice_list    = list(filter(lambda x:x not in voice_no_list,  np.arange(voice_train_idx, voice_check_idx)))
-
-    ###
     known_person_list   = [1, 2, 3, 5, 7, 12, 14, 69, 77, 78, 84, 90, 91, 93, 94, 95]
     unknown_person_list = [22, 24, 26, 27, 30, 32, 34, 38, 41, 43, 44, 56, 57, 61, 63, 64]
+    train_voice_list    = np.arange(cfg.voice_train_size)
+    check_voice_list    = np.arange(cfg.voice_train_size, cfg.voice_train_size + cfg.voice_check_size)
 
     logging.debug('known_person_list: '   + str(known_person_list))
     logging.debug('unknown_person_list: ' + str(unknown_person_list))
@@ -125,24 +110,30 @@ def main(cfg):
         weights_path = os.path.join(cfg.output_dir, 'weights.pth')
         logging.info('Start learning: ' + weights_path)
 
-        train_loader = DataLoader(known_person_list, train_voice_list, batch_size, cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length, cfg.use_mel, seed=0)
-        valid_loader = DataLoader(known_person_list, check_voice_list, batch_size, cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length, cfg.use_mel, seed=0)
+        train_loader = DataLoader(known_person_list, train_voice_list, batch_size, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, cfg.use_mel, seed=0)
+        valid_loader = DataLoader(known_person_list, check_voice_list, batch_size, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, cfg.use_mel, seed=0)
         history = learn(model, (train_loader, valid_loader), weights_path, leaning_rate=1e-4, patience=cfg.patience)
         logging.info('History:\n' + json.dumps(history, ensure_ascii=False, indent=4))
+        
+        try:
+            logging.info(str([metrics for metrics in history.keys()]) + ': ' + str([metrics[-(cfg.patience + 1)] for metrics in history.values()]))
+        except IndexError:
+            logging.info('It could not be learned.')
 
     logging.info('Start evaluation')
 
-    # SVMは無駄に時間がかかりすぎるので……
-    svm_train_voice_list = list(filter(lambda x:x not in voice_no_list, np.arange(calc_file_idx(voice_no_list, cfg.svm_voice_train_size))))
+    # SVMはバカみたいに時間がかかるので、別途指定している
+    svm_train_voice_list = np.arange(cfg.svm_voice_train_size)
+    logging.debug('svm_train_voice_list: ' + str(svm_train_voice_list))
 
-    known_train_loader   = DataLoader(known_person_list,  svm_train_voice_list, batch_size,  cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length, cfg.use_mel)
-    known_eval_loader    = DataLoader(known_person_list,  check_voice_list, batch_size,      cfg.nphonemes_path, cfg.fast_dataset_path, cfg.deform_type, cfg.phonemes_length, cfg.use_mel)
-    unknown_train_loader = DataLoader(unknown_person_list, svm_train_voice_list, batch_size, cfg.nphonemes_path, cfg.dataset_path,      cfg.deform_type, cfg.phonemes_length, cfg.use_mel)
-    unknown_eval_loader  = DataLoader(unknown_person_list, check_voice_list, batch_size,     cfg.nphonemes_path, cfg.dataset_path,      cfg.deform_type, cfg.phonemes_length, cfg.use_mel)
-    known_train_embed_pred, known_train_embed_true     = predict(model.embed, known_train_loader)
-    known_eval_embed_pred, known_eval_embed_true       = predict(model.embed, known_eval_loader)
+    known_train_loader   = DataLoader(known_person_list,   svm_train_voice_list, batch_size, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, cfg.use_mel)
+    known_eval_loader    = DataLoader(known_person_list,   check_voice_list,     batch_size, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, cfg.use_mel)
+    unknown_train_loader = DataLoader(unknown_person_list, svm_train_voice_list, batch_size, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, cfg.use_mel)
+    unknown_eval_loader  = DataLoader(unknown_person_list, check_voice_list,     batch_size, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, cfg.use_mel)
+    known_train_embed_pred,   known_train_embed_true   = predict(model.embed, known_train_loader)
+    known_eval_embed_pred,    known_eval_embed_true    = predict(model.embed, known_eval_loader)
     unknown_train_embed_pred, unknown_train_embed_true = predict(model.embed, unknown_train_loader)
-    unknown_eval_embed_pred, unknown_eval_embed_true   = predict(model.embed, unknown_eval_loader)
+    unknown_eval_embed_pred,  unknown_eval_embed_true  = predict(model.embed, unknown_eval_loader)
     known_svm_confusion_matrix   = calc_svm_matrix(known_train_embed_pred,   known_train_embed_true,   known_eval_embed_pred,   known_eval_embed_true,   cfg.person_known_size)
     unknown_svm_confusion_matrix = calc_svm_matrix(unknown_train_embed_pred, unknown_train_embed_true, unknown_eval_embed_pred, unknown_eval_embed_true, cfg.person_unknown_size)
     known_svm_acc_rate   = np.trace(known_svm_confusion_matrix).astype(np.int)
@@ -311,19 +302,7 @@ if __name__ == '__main__':
 
     # データセットのパス
     args['dataset_path'] = os.path.join(args['dataset_dir'], 'jvs%(person)03d/VOICEACTRESS100_%(voice)03d_%(deform_type)s.npz')
-    if args['fast_dataset_dir'] is not None:
-        args['fast_dataset_path'] = os.path.join(args['fast_dataset_dir'], 'jvs%(person)03d/VOICEACTRESS100_%(voice)03d_%(deform_type)s.npz')
-    else:
-        args['fast_dataset_path'] = args['dataset_path']
 
     cfg = easydict.EasyDict(args)
-
-    # CPU
-    os.environ['CUDA_VISIBLE_DEVICES'] = cfg.gpu
-
-    os.makedirs(cfg.output_dir, exist_ok=True)
-    backup_code(['python/*.py'], cfg.output_dir)
-
-    init_logger(os.path.join(cfg.output_dir, 'general.log'))
 
     main(cfg)

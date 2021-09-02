@@ -28,13 +28,10 @@ class DataLoader(torch.utils.data.Dataset):
         deform_type=='padding'の場合の整形後のサイズ。
     '''
 
-    def __init__(self, person_list, voice_list, batch_size, nphonemes_path, dataset_path, deform_type, phonemes_length=None, mel=False, seed=None):
+    def __init__(self, person_list, voice_list, batch_size, dataset_path, deform_type, phonemes_length=None, mel=False, seed=None):
         self.person_list = person_list
         self.voice_list  = voice_list
         self.batch_size  = batch_size
-
-        with open(nphonemes_path % { 'condition': 'ok' }, 'r') as f:
-            self.nphonemes_list = np.array(list(map(int, f.read().split('\n'))))[voice_list]
 
         self.dataset_path    = dataset_path
         self.deform_type     = deform_type
@@ -42,7 +39,7 @@ class DataLoader(torch.utils.data.Dataset):
         self.mel_basis       = librosa.filters.mel(sr=24000, n_fft=1024) if mel else None
 
         self.person_nbatches  = len(person_list) // batch_size[0]
-        self.phoneme_nbatches = np.sum(self.nphonemes_list) // batch_size[1]
+        self.phoneme_nbatches = len(voice_list) * 32 // batch_size[1]
 
         if seed is not None:
             self.reset_shuffle(seed)
@@ -77,13 +74,17 @@ class DataLoader(torch.utils.data.Dataset):
         person_end_idx   = (person_batch_idx + 1) * self.batch_size[0]
 
         # 読み込むべきファイルのvoiceの範囲を求める
-        nphonemes_accumulation_list = np.cumsum(self.nphonemes_list)
-        voice_start_idx = np.where(phoneme_batch_idx * self.batch_size[1] < nphonemes_accumulation_list)[0][0]
-        voice_end_idx   = np.where((phoneme_batch_idx + 1) * self.batch_size[1] <= nphonemes_accumulation_list)[0][0] + 1
-        nphonemes_accumulation_list = np.insert(nphonemes_accumulation_list, 0, 0)
+        # nphonemes_accumulation_list = np.cumsum(self.nphonemes_list)
+        # voice_start_idx = np.where(phoneme_batch_idx * self.batch_size[1] < nphonemes_accumulation_list)[0][0]
+        # voice_end_idx   = np.where((phoneme_batch_idx + 1) * self.batch_size[1] <= nphonemes_accumulation_list)[0][0] + 1
+        # nphonemes_accumulation_list = np.insert(nphonemes_accumulation_list, 0, 0)
+        voice_start_idx = phoneme_batch_idx * self.batch_size[1] // 32
+        voice_end_idx   = (phoneme_batch_idx + 1) * self.batch_size[1] // 32
         
         # 複数のvoiceを結合したデータから取り出すべき範囲を求める
-        voice_start_phoneme = phoneme_batch_idx * self.batch_size[1] - nphonemes_accumulation_list[voice_start_idx]
+        # voice_start_phoneme = phoneme_batch_idx * self.batch_size[1] - nphonemes_accumulation_list[voice_start_idx]
+        # voice_end_phoneme   = voice_start_phoneme + self.batch_size[1]
+        voice_start_phoneme = phoneme_batch_idx * self.batch_size[1] % 32
         voice_end_phoneme   = voice_start_phoneme + self.batch_size[1]
 
         data = list()

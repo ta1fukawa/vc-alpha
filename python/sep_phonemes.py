@@ -8,25 +8,27 @@ import scipy.interpolate
 
 src = 'resource/jvs_ver1_fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.wav'
 lab = 'resource/jvs_ver1_fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.lab'
-dst = 'resource/jvs_ver1_phonemes/jvs%(person)03d/VOICEACTRESS100_%(voice)03d_%(deform_type)s.npz'
+dst = 'resource/jvs_ver1_phonemes_v1/jvs%(person)03d/VOICEACTRESS100_%(idx)03d_%(deform_type)s.npz'
+
+min_sp_length = 32
+min_nfile = 999
 
 for person in range(100):
 
     print('[Processing] person:', person + 1)
     
-    os.makedirs(os.path.split(dst)[0] % { 'person': person + 1 }, exist_ok=True)
+    variable = { key: list() for key in ['f0', 'sp', 'ap'] }
+    stretch  = { key: list() for key in ['f0', 'sp', 'ap'] }
+    label    = { key: list() for key in ['label'] }
 
     for voice in range(100):
 
-        person_exclusion_list = [8, 16, 17, 21, 23, 29, 35, 37, 42, 46, 47, 50, 54, 58, 59, 73, 88, 97]
-        voice_exclusion_list  = [5, 18, 24, 40, 42, 44, 46, 55, 56, 59, 60, 61, 63, 65, 71, 73, 75, 81, 84, 85, 87, 93, 94, 98]
-
-        if person in person_exclusion_list and voice in voice_exclusion_list:
-            continue
-
         specific = { 'person': person + 1, 'voice': voice + 1 }
 
-        wave, sr = librosa.load(src % specific, sr=24000, dtype=np.float64, mono=True)
+        try:
+            wave, sr = librosa.load(src % specific, sr=24000, dtype=np.float64, mono=True)
+        except:
+            continue
 
         with open(lab % specific, 'r', newline='', encoding='utf-8') as f:
             tsv_reader = csv.reader(f, delimiter='\t')
@@ -38,10 +40,6 @@ for person in range(100):
         f0 = pyworld.stonemask(wave, _f0, t, sr) # 洗練させるらしい f0 (n, )
         sp = pyworld.cheaptrick(wave, f0, t, sr) # スペクトル包絡の抽出 spectrogram (n, f)
         ap = pyworld.d4c(wave, f0, t, sr) # 非周期性指標の抽出 aperiodicity (n, f)
-        
-        variable = { key: list() for key in ['f0', 'sp', 'ap'] }
-        stretch  = { key: list() for key in ['f0', 'sp', 'ap'] }
-        label    = { key: list() for key in ['label'] }
 
         for start_sec, end_sec, phoneme in labels:
 
@@ -54,6 +52,15 @@ for person in range(100):
 
             start_frame = int(float(start_sec) * separation_rate)
             end_frame   = int(float(end_sec) * separation_rate)
+
+            try:
+                start_frame += np.where(f0[start_frame:end_frame])[0][0]
+                end_frame   -= np.where(f0[start_frame:end_frame][::-1])[0][0]
+            except:
+                continue
+            if start_frame + min_sp_length + 1 >= end_frame:
+                continue
+
             strech_rate = (end_frame - start_frame) / target_length
 
             before_t = np.linspace(0, target_length - 1, end_frame - start_frame)
@@ -73,9 +80,19 @@ for person in range(100):
             stretch['ap'].append(stretch_ap.astype(np.float32))
 
             label['label'].append(phoneme)
+    
+    os.makedirs(os.path.split(dst)[0] % { 'person': person + 1 }, exist_ok=True)
+
+    nfile = len(label['label']) // 32
+    for idx in range(nfile):
+
+        specific = { 'person': person + 1, 'idx': idx + 1 }
             
-        np.savez_compressed(dst % { **specific, 'deform_type': 'variable' }, **variable, **label)
-        np.savez_compressed(dst % { **specific, 'deform_type': 'stretch' }, **stretch, **label)
+        np.savez_compressed(dst % { **specific, 'deform_type': 'variable' }, **{key: value[idx * 32:(idx + 1) * 32] for key, value in variable.items()}, **label)
+        np.savez_compressed(dst % { **specific, 'deform_type': 'stretch' }, **{key: value[idx * 32:(idx + 1) * 32] for key, value in stretch.items()}, **label)
         os.symlink(os.path.split(dst)[1] % { **specific, 'deform_type': 'variable' }, dst % { **specific, 'deform_type': 'padding' })
 
-    
+    if nfile < min_nfile:
+        min_nfile = nfile
+
+print('min_nfile:', min_nfile)
