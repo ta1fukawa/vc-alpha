@@ -29,11 +29,11 @@ def get_args():
     parser.add_argument('--dataset-dir', default='resource/jvs_ver1_phonemes', type=str, metavar='PATH', help='データセットの書式付きパス')
     
     parser.add_argument('-x', '--model-dims', default=None, type=int, metavar='N', help='モデルのConv1d/Conv2dの選択')
-    parser.add_argument('--patience',         default=4,    type=int, metavar='N', help='Early Stoppingまでの回数')
+    parser.add_argument(      '--patience',   default=4,    type=int, metavar='N', help='Early Stoppingまでの回数')
     
-    parser.add_argument('--no-load-weights', action='store_true', help='重み読み込みの有無')
-    parser.add_argument('--no-learn',        action='store_true', help='学習の有無')
-    parser.add_argument('--use-mel',         action='store_true', help='メルスペクトログラムの使用の有無')
+    parser.add_argument('-nw', '--no-load-weights', action='store_true', help='重み読み込みの有無')
+    parser.add_argument('-nl', '--no-learn',        action='store_true', help='学習の有無')
+    parser.add_argument(       '--use-mel',         action='store_true', help='メルスペクトログラムの使用の有無')
 
     parser.add_argument('--sampling-rate', default=24000, type=int, metavar='N', help='サンプリング周波数')
     parser.add_argument('--nfft',          default=1024,  type=int, metavar='N', help='STFTのウィンドウ幅（通常はPyWorldに依存）')
