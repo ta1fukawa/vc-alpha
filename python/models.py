@@ -102,10 +102,10 @@ class FullModel(torch.nn.Module):
 
         self.drop1 = torch.nn.Dropout(p=0.2)
 
-        self.line2 = torch.nn.Linear(512, 512)
+        self.line2 = torch.nn.Linear(512, 1024)
         self.drop2 = torch.nn.Dropout(p=0.2)
 
-        self.line3 = torch.nn.Linear(512, nclasses)
+        self.line3 = torch.nn.Linear(1024, nclasses)
 
     def forward(self, x):
         x = torch.nn.functional.relu(self.embed(x))
