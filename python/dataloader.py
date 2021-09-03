@@ -74,17 +74,11 @@ class DataLoader(torch.utils.data.Dataset):
         person_end_idx   = (person_batch_idx + 1) * self.batch_size[0]
 
         # 読み込むべきファイルのvoiceの範囲を求める
-        # nphonemes_accumulation_list = np.cumsum(self.nphonemes_list)
-        # voice_start_idx = np.where(phoneme_batch_idx * self.batch_size[1] < nphonemes_accumulation_list)[0][0]
-        # voice_end_idx   = np.where((phoneme_batch_idx + 1) * self.batch_size[1] <= nphonemes_accumulation_list)[0][0] + 1
-        # nphonemes_accumulation_list = np.insert(nphonemes_accumulation_list, 0, 0)
         voice_start_idx = phoneme_batch_idx * self.batch_size[1] // 32
-        voice_end_idx   = (phoneme_batch_idx + 1) * self.batch_size[1] // 32
+        voice_end_idx   = ((phoneme_batch_idx + 1) * self.batch_size[1] - 1) // 32 + 1
         
         # 複数のvoiceを結合したデータから取り出すべき範囲を求める
-        # voice_start_phoneme = phoneme_batch_idx * self.batch_size[1] - nphonemes_accumulation_list[voice_start_idx]
-        # voice_end_phoneme   = voice_start_phoneme + self.batch_size[1]
-        voice_start_phoneme = phoneme_batch_idx * self.batch_size[1] % 32
+        voice_start_phoneme = phoneme_batch_idx % 32 * self.batch_size[1]
         voice_end_phoneme   = voice_start_phoneme + self.batch_size[1]
 
         data = list()
