@@ -45,10 +45,11 @@ def get_args():
     parser.add_argument('-bp', '--batch-length-phoneme', default=1,  type=int, metavar='N', help='各バッチの音素数')
     parser.add_argument('--phonemes-length',             default=32, type=int, metavar='N', help='音素の時間長')
 
-    parser.add_argument('-pk', '--person-known-size',   default=16, type=int, metavar='N', help='既知の話者として使用する話者数')
-    parser.add_argument('-pu', '--person-unknown-size', default=16, type=int, metavar='N', help='未知の話者として使用する話者数')
-    parser.add_argument('-vt', '--voice-train-size',    default=20, type=int, metavar='N', help='学習に使用する音声ファイル数')
-    parser.add_argument('-vc', '--voice-check-size',    default=6,  type=int, metavar='N', help='検証に使用する音声ファイル数')
+    parser.add_argument('-pk',     '--person-known-size',    default=16, type=int, metavar='N', help='既知の話者として使用する話者数')
+    parser.add_argument('-pu',     '--person-unknown-size',  default=16, type=int, metavar='N', help='未知の話者として使用する話者数')
+    parser.add_argument('-vt',     '--voice-train-size',     default=20, type=int, metavar='N', help='学習に使用する音声ファイル数')
+    parser.add_argument('-vc',     '--voice-check-size',     default=6,  type=int, metavar='N', help='検証に使用する音声ファイル数')
+    parser.add_argument('-svm-vt', '--svm-voice-train-size', default=8,  type=int, metavar='N', help='SVMの学習に使用する音声ファイル数')
     
     args = vars(parser.parse_args(sys.argv[1:]))
     return args
@@ -120,6 +121,8 @@ def main(cfg):
             logging.info('It could not be learned.')
 
     logging.info('Start evaluation')
+    check_voice_list = np.arange(cfg.voice_train_size, cfg.voice_train_size + cfg.svm_voice_check_size)  # max: 26
+    logging.debug('check_voice_list: ' + str(check_voice_list))
 
     known_train_loader   = DataLoader(known_person_list,   train_voice_list, batch_size, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, cfg.use_mel)
     known_eval_loader    = DataLoader(known_person_list,   check_voice_list, batch_size, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, cfg.use_mel)
@@ -267,9 +270,13 @@ if __name__ == '__main__':
 
     # GPU番号
     if args['gpu'] is None:
-        gpu_text = console_inputarea('使用するGPU番号（0以上）を入力してください', 'CPUを使用する場合は何も入力せずエンター', numeric_ok=True, lowercase_ok=False, uppercase_ok=False, sign_ok=False)
-        if gpu_text is None: exit(0)
-        args['gpu'] = gpu_text
+        ngpus = torch.cuda.device_count()
+        gpu_no = console_menu('使用するGPUを選択してください', [torch.cuda.get_device_name(i) for i in range(ngpus)] + ['使用しない'])
+        if gpu_no < 0: exit(0)
+        if gpu_no == ngpus:
+            args['gpu'] = ''
+        else:
+            args['gpu'] = int(gpu_no)
 
     # 時間幅変形の方法
     if args['deform_type'] is None:
