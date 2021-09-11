@@ -30,13 +30,7 @@ python3 python/init_dataset.py
 python3 python/sep_phonemes.py
 ```
 
-5. calc_nphonemes.pyを実行する
-
-```Bash
-python3 python/calc_nphonemes.py
-```
-
-6. main.pyを実行する
+5. main.pyを実行する
 
 ```Bash
 python3 python/main.py
