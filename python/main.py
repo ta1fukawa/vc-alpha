@@ -92,7 +92,7 @@ def main(cfg):
     known_person_list   = [89, 90, 39, 2, 27, 68, 24, 99, 40, 34, 61, 71, 26, 63, 9, 92]
     unknown_person_list = [94, 64, 0, 13, 77, 7, 16, 17, 57, 65, 84, 15, 46, 48, 70, 56]
     train_voice_list    = np.arange(cfg.voice_train_size)
-    check_voice_list    = np.arange(cfg.voice_train_size, cfg.voice_train_size + cfg.voice_check_size)  # max: 26
+    check_voice_list    = np.arange(cfg.voice_check_size)  # max: 26
 
     logging.debug('known_person_list: '   + str(known_person_list))
     logging.debug('unknown_person_list: ' + str(unknown_person_list))
@@ -121,7 +121,7 @@ def main(cfg):
             logging.info('It could not be learned.')
 
     logging.info('Start evaluation')
-    check_voice_list = np.arange(cfg.voice_train_size, cfg.voice_train_size + cfg.svm_voice_check_size)  # max: 26
+    check_voice_list = np.arange(cfg.voice_train_size, cfg.voice_train_size + cfg.voice_check_size)  # max: 26
     logging.debug('check_voice_list: ' + str(check_voice_list))
 
     known_train_loader   = DataLoader(known_person_list,   train_voice_list, batch_size, cfg.dataset_path, cfg.deform_type, cfg.phonemes_length, cfg.use_mel)
@@ -276,7 +276,7 @@ if __name__ == '__main__':
         if gpu_no == ngpus:
             args['gpu'] = ''
         else:
-            args['gpu'] = int(gpu_no)
+            args['gpu'] = str(gpu_no)
 
     # 時間幅変形の方法
     if args['deform_type'] is None:
