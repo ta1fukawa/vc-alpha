@@ -2,6 +2,7 @@ import csv
 import os
 import warnings
 import sys
+import multiprocessing
 
 import librosa
 import numpy as np
@@ -16,13 +17,12 @@ target_length = int(sys.argv[1])  # 32
 min_sp_length = int(sys.argv[2])  # 16
 min_nfile = 999
 
-src = 'resource/jvs_ver1_fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.wav'
-lab = 'resource/jvs_ver1_fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.lab'
-dst_dir = 'resource/jvs_ver1_%(target_len)d_%(filter_len)d' % {'target_len': target_length, 'filter_len': min_sp_length}
+src = 'resource/jvs_ver1/fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.wav'
+lab = 'resource/jvs_ver1/fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.lab'
+dst_dir = 'resource/jvs_ver1/data_%(target_len)d_%(filter_len)d' % {'target_len': target_length, 'filter_len': min_sp_length}
 dst = dst_dir + '/jvs%(person)03d/VOICEACTRESS100_%(idx)03d_%(deform_type)s.npz'
 
-for person in range(100):
-
+def process(person):
     print('[Processing] person:', person + 1)
     
     variable = { key: list() for key in ['f0', 'sp', 'ap'] }
@@ -99,7 +99,9 @@ for person in range(100):
         np.savez_compressed(dst % { **specific, 'deform_type': 'stretch' }, **{key: value[idx * 32:(idx + 1) * 32] for key, value in stretch.items()}, **label)
         os.symlink(os.path.split(dst)[1] % { **specific, 'deform_type': 'variable' }, dst % { **specific, 'deform_type': 'padding' })
 
-    if nfile < min_nfile:
-        min_nfile = nfile
+    return nfile
 
-print('min_nfile:', min_nfile)
+pool_obj = multiprocessing.Pool()
+
+nfile_list = pool_obj.map(process, range(100))
+print(np.min(nfile_list))

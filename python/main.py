@@ -26,7 +26,7 @@ def get_args():
     parser.add_argument('--code-id',  default='default', type=str, metavar='ID',   help='プログラムコードの識別コード')
     parser.add_argument('--no-backup', action='store_true', help='Pythonコードのバックアップの無効化（推奨）')
 
-    parser.add_argument('--dataset-dir', default='resource/jvs_ver1_phonemes_v4', type=str, metavar='PATH', help='データセットの書式付きパス')
+    parser.add_argument('--dataset-dir', default='resource/jvs_ver1/data_32_16', type=str, metavar='PATH', help='データセットの書式付きパス')
     
     parser.add_argument('-x', '--model-dims', default=None, type=int, metavar='N', help='モデルのConv1d/Conv2dの選択')
     parser.add_argument(      '--patience',   default=4,    type=int, metavar='N', help='Early Stoppingまでの回数')
