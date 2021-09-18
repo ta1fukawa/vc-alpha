@@ -1,6 +1,7 @@
 import csv
 import os
 import warnings
+import sys
 
 import librosa
 import numpy as np
@@ -9,8 +10,10 @@ import scipy.interpolate
 
 warnings.filterwarnings('ignore')
 
-target_length   = 32
-min_sp_length = 16
+assert len(sys.argv) == 3
+
+target_length = sys.argv[1]  # 32
+min_sp_length = sys.argv[2]  # 16
 min_nfile = 999
 
 src = 'resource/jvs_ver1_fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.wav'
