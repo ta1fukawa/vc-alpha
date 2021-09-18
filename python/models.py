@@ -16,10 +16,8 @@ class EmbedModel1d(torch.nn.Module):
         self.conv3  = torch.nn.Conv1d(512, 2048, kernel_size=3, dilation=1, padding='same')
         self.line3  = torch.nn.Linear(4096, 512)
         
-    def _stats_pooling(self, x):
-        mean = torch.mean(x, dim=2)
-        std = torch.sqrt(torch.clamp(torch.var(x, dim=2), 1e-8, None))
-        return torch.cat([mean, std], dim=1)
+    def _max_pooling(self, x):
+        return x.max(dim=2)[0]
         
     def forward(self, x):
         x = torch.permute(x, dims=[0, 2, 1])
@@ -33,7 +31,7 @@ class EmbedModel1d(torch.nn.Module):
         x = self.drop2(x)
         
         x = self.conv3(x)
-        x = self._stats_pooling(x)
+        x = self._max_pooling(x)
         x = self.line3(x)
         
         return x
@@ -58,13 +56,10 @@ class EmbedModel2d(torch.nn.Module):
         self.pool3  = torch.nn.MaxPool2d(kernel_size=(1, 4))
         
         self.conv4  = torch.nn.Conv2d(256, 2048, kernel_size=(5, 5), dilation=(1, 1), padding='same')
-        self.line4  = torch.nn.Linear(2048 * 3, 512)
+        self.line4  = torch.nn.Linear(2048, 512)
         
-    def _stats_pooling(self, x):
-        mean = torch.mean(x, dim=[2, 3])
-        std = torch.sqrt(torch.clamp(torch.var(x, dim=[2, 3]), 1e-8, None))
-        max_ = x.max(dim=3)[0].max(dim=2)[0]
-        return torch.cat([mean, std, max_], dim=1)
+    def _max_pooling(self, x):
+        return x.max(dim=3)[0].max(dim=2)[0]
         
     def forward(self, x):
         x = torch.unsqueeze(x, 1)
@@ -85,7 +80,7 @@ class EmbedModel2d(torch.nn.Module):
         x = self.pool3(x)
         
         x = self.conv4(x)
-        x = self._stats_pooling(x)
+        x = self._max_pooling(x)
         x = self.line4(x)
         
         return x
