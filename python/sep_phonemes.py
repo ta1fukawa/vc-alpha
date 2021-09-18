@@ -12,13 +12,14 @@ warnings.filterwarnings('ignore')
 
 assert len(sys.argv) == 3
 
-target_length = sys.argv[1]  # 32
-min_sp_length = sys.argv[2]  # 16
+target_length = int(sys.argv[1])  # 32
+min_sp_length = int(sys.argv[2])  # 16
 min_nfile = 999
 
 src = 'resource/jvs_ver1_fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.wav'
 lab = 'resource/jvs_ver1_fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.lab'
-dst = 'resource/jvs_ver1_%(target_len)s_%(filter_len)s/jvs%(person)03d/VOICEACTRESS100_%(idx)03d_%(deform_type)s.npz' % {'target_len': target_length, 'filter_len': min_sp_length}
+dst_dir = 'resource/jvs_ver1_%(target_len)d_%(filter_len)d' % {'target_len': target_length, 'filter_len': min_sp_length}
+dst = dst_dir + '/jvs%(person)03d/VOICEACTRESS100_%(idx)03d_%(deform_type)s.npz'
 
 for person in range(100):
 
