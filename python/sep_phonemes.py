@@ -9,12 +9,13 @@ import scipy.interpolate
 
 warnings.filterwarnings('ignore')
 
-src = 'resource/jvs_ver1_fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.wav'
-lab = 'resource/jvs_ver1_fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.lab'
-dst = 'resource/jvs_ver1_phonemes_v5/jvs%(person)03d/VOICEACTRESS100_%(idx)03d_%(deform_type)s.npz'
-
+target_length   = 32
 min_sp_length = 16
 min_nfile = 999
+
+src = 'resource/jvs_ver1_fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.wav'
+lab = 'resource/jvs_ver1_fixed/jvs%(person)03d/VOICEACTRESS100_%(voice)03d.lab'
+dst = 'resource/jvs_ver1_%(target_len)s_%(filter_len)s/jvs%(person)03d/VOICEACTRESS100_%(idx)03d_%(deform_type)s.npz' % {'target_len': target_length, 'filter_len': min_sp_length}
 
 for person in range(100):
 
@@ -51,7 +52,6 @@ for person in range(100):
 
             separation_rate = 200
             hop_length      = sr // separation_rate
-            target_length   = 32
 
             start_frame = int(float(start_sec) * separation_rate)
             end_frame   = int(float(end_sec) * separation_rate)
